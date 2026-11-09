@@ -1,0 +1,2 @@
+import { siteConfig } from '../config/siteConfig'
+export default function StatsBar(){return <div className="container-x grid grid-cols-3 border-y border-white/10 py-7">{siteConfig.stats.map((s,i)=><div key={s.label} className={`text-center ${i?'border-l border-white/10':''}`}><div className="font-display text-2xl text-lime md:text-3xl">{s.value}</div><div className="eyebrow mt-2">{s.label}</div></div>)}</div>}

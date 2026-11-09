@@ -1,0 +1,4 @@
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { siteConfig } from '../config/siteConfig'
+export default function FAQ(){const [open,setOpen]=useState(0);return <section className="section"><div className="container-x grid gap-8 lg:grid-cols-[.7fr_1.3fr] lg:gap-10"><div><p className="eyebrow">GOOD TO KNOW</p><h2 className="mt-4 font-display text-4xl sm:text-5xl">Questions, <i className="text-lime">answered.</i></h2></div><div>{siteConfig.faqs.map(([q,a],i)=><div key={q} className="border-b border-white/10"><button className="flex min-h-14 w-full items-center justify-between gap-4 py-4 text-left font-semibold" onClick={()=>setOpen(open===i?-1:i)} aria-expanded={open===i}>{q}<ChevronDown className={`shrink-0 transition ${open===i?'rotate-180 text-lime':''}`}/></button>{open===i&&<p className="pb-5 pr-8 text-sm leading-7 text-white/55">{a}</p>}</div>)}</div></div></section>}
