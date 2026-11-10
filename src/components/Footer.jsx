@@ -5,8 +5,8 @@ export default function Footer() {
     <footer className="py-12">
       <div className="container-x flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
         <div>
-          <a href="#" className="font-display text-4xl italic text-lime">
-            Artiverse
+          <a href="#" className="font-['Syne',sans-serif] text-3xl sm:text-4xl font-extrabold tracking-tight text-white hover:text-lime transition-colors">
+            Artiverse<span className="text-lime">.</span>
           </a>
           <p className="mt-3 text-xs text-white/45">
             Creative Arts & Events · MSIT, Kolkata

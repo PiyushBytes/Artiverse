@@ -1,11 +1,7 @@
 export const siteConfig = {
   brand: "Artiverse",
   college: "Meghnad Saha Institute of Technology, Kolkata",
-  stats: [
-    { value: "X+", label: "Events" },
-    { value: "6", label: "Domains" },
-    { value: "YEAR", label: "Founded" }
-  ],
+  foundedYear: 2025,
   recruitment: {
     deadline: "2026-11-30T23:59:00+05:30",
     closeDate: "30 November 2026",

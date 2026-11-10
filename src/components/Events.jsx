@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -58,14 +58,17 @@ function StatusPill({ event }) {
   );
 }
 
-function EventCard({ event, onOpen, reduceMotion }) {
+function EventCard({ event, onOpen, reduceMotion, index = 0 }) {
   const past = event.status === "past";
   const canRegister = event.status === "open" && event.link;
   const [saved, setSaved] = useState(false);
   return (
     <motion.article
+      initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.985 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.18 }}
       whileHover={reduceMotion ? undefined : { y: -5, scale: 1.015 }}
-      transition={{ duration: 0.22 }}
+      transition={{ duration: 0.48, delay: reduceMotion ? 0 : (index % 6) * 0.055, ease: [0.22, 1, 0.36, 1] }}
       className="event-poster-card group relative w-[min(72vw,220px)] shrink-0 snap-start sm:w-[220px]"
     >
       <button
@@ -353,10 +356,11 @@ export default function Events() {
                   ref={carouselRef}
                   className="event-carousel -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pb-5 sm:mx-0 sm:gap-5 sm:px-0 sm:scroll-px-0"
                 >
-                  {upcoming.map((event) => (
+                  {upcoming.map((event, index) => (
                     <EventCard
                       key={event.id}
                       event={event}
+                      index={index}
                       onOpen={setSelectedEvent}
                       reduceMotion={reduceMotion}
                     />
@@ -364,10 +368,11 @@ export default function Events() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                  {tabEvents.map((event) => (
+                  {tabEvents.map((event, index) => (
                     <EventCard
                       key={event.id}
                       event={event}
+                      index={index}
                       onOpen={setSelectedEvent}
                       reduceMotion={reduceMotion}
                     />

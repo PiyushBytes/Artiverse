@@ -1,4 +1,6 @@
-export default function BrandDuotoneVideo({ className = '', ...props }) {
+import { forwardRef } from 'react'
+
+const BrandDuotoneVideo = forwardRef(function BrandDuotoneVideo({ className = '', ...props }, ref) {
   return <>
     <svg className="absolute size-0" aria-hidden="true" focusable="false">
       <filter id="artiverse-duo" colorInterpolationFilters="sRGB">
@@ -9,6 +11,8 @@ export default function BrandDuotoneVideo({ className = '', ...props }) {
         </feComponentTransfer>
       </filter>
     </svg>
-    <video {...props} className={`brand-duotone-video ${className}`} src={props.src ?? '/video/nav%20video.mp4'} />
+    <video {...props} ref={ref} className={`brand-duotone-video ${className}`} src={props.src ?? '/video/nav%20video.mp4'} />
   </>
-}
+})
+
+export default BrandDuotoneVideo
