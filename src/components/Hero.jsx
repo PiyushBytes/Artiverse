@@ -252,7 +252,7 @@ export default function Hero({ onApply }) {
             className="pointer-events-none absolute z-10 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cobalt/35 opacity-0 blur-[90px] transition-opacity duration-500"
           />
           <motion.div
-            className="hero-video-wrapper absolute inset-[-4%] -right-20 overflow-hidden lg:inset-y-[-4%] lg:left-0 lg:-right-20"
+            className="hero-video-wrapper absolute inset-0 sm:inset-[-4%] overflow-hidden sm:-right-20 lg:inset-y-[-4%] lg:left-0 lg:-right-20"
             style={{
               x: reduceMotion ? 0 : videoX,
               y: reduceMotion ? 0 : videoY,

@@ -10,6 +10,7 @@ import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
 import Events from "./components/Events";
+import { MobileBottomBar } from "./mobile";
 
 export default function App() {
   const [toast, setToast] = useState("");
@@ -33,7 +34,6 @@ export default function App() {
     if (window.location.pathname !== path) window.history.pushState({}, "", path);
     setRoute(getRoute());
     window.scrollTo({ top: 0, behavior: "smooth" });
-    // force route recalc after pushState
     const p = path;
     if (p === "/events") setRoute("events");
     else if (p === "/apply" || p === "/join") setRoute("apply");
@@ -59,7 +59,8 @@ export default function App() {
         isEventsPage={isEventsPage}
         isApplyPage={isApplyPage}
       />
-      <main className="overflow-x-clip">
+
+      <main className="overflow-x-clip has-mobile-bottom-bar">
         {isApplyPage ? (
           <ApplyPage onBack={() => navigate("/")} />
         ) : isEventsPage ? (
@@ -75,7 +76,18 @@ export default function App() {
           </>
         )}
       </main>
+
       {route === "home" && <Footer />}
+
+      {/* Global Mobile Quick Navigation Dock */}
+      <MobileBottomBar
+        onHome={() => navigate("/")}
+        onEvents={() => navigate("/events")}
+        onApply={() => navigate("/apply")}
+        isEventsPage={isEventsPage}
+        isApplyPage={isApplyPage}
+      />
+
       <Toast message={toast} onClose={() => setToast("")} />
     </div>
   );

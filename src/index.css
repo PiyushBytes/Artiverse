@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./mobile/mobile.css";
 
 @theme {
   --color-ink: #030407;
