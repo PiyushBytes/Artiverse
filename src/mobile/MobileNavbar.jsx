@@ -50,22 +50,8 @@ export default function MobileNavbar({
           <span className="size-1.5 rounded-full bg-lime" />
         </a>
 
-        {/* Right Actions: Compact Join Now + Menu Toggle */}
+        {/* Right Action: Menu Toggle */}
         <div className="flex items-center gap-2">
-          {!isEventsPage && (
-            <button
-              onClick={handleApply}
-              className={`lime-button glow rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider ${
-                isApplyPage ? 'ring-2 ring-lime/50 ring-offset-2 ring-offset-ink' : ''
-              }`}
-            >
-              <span className="flex items-center gap-1">
-                <Sparkles size={11} className="text-ink" />
-                JOIN
-              </span>
-            </button>
-          )}
-
           <button
             onClick={() => setOpen((prev) => !prev)}
             className="grid size-9 place-items-center rounded-full border border-white/15 bg-[#080a10]/85 text-white/90 backdrop-blur-xl transition-colors hover:border-lime/50 hover:text-lime"
