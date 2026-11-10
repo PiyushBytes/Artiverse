@@ -148,12 +148,12 @@ export default function Hero({ onApply }) {
   }
 
   return (
-    <section className="hero relative flex min-h-[100svh] items-center overflow-hidden bg-[#05060a] px-4 pb-24 pt-20 sm:px-6 sm:pb-16 sm:pt-32 lg:pt-36">
+    <section className="hero relative flex min-h-[100svh] items-center overflow-hidden bg-[#05060a] px-4 pb-20 pt-20 sm:px-6 sm:pb-16 sm:pt-36 lg:pt-40">
       <audio ref={audioRef} src="/sounds/sonican-dramatic-classical-art-music-30-seconds-478122.mp3" autoPlay loop preload="auto" aria-hidden="true" />
-      <div className="relative mx-auto grid w-full max-w-7xl lg:max-w-[1380px] items-center gap-8 px-2 sm:px-6 lg:px-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,.92fr)] lg:gap-14">
+      <div className="relative mx-auto grid w-full max-w-7xl lg:max-w-[1380px] items-center gap-4 px-1 sm:gap-8 sm:px-6 lg:px-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,.92fr)] lg:gap-14">
         <div className="relative z-10 flex w-full max-w-full sm:max-w-[36rem] flex-col items-start text-left">
           {/* Recruitment Pill: Fully responsive on mobile */}
-          <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-lime/30 bg-ink/55 px-3 py-1.5 text-[8.5px] font-semibold uppercase tracking-[0.08em] text-white/85 backdrop-blur sm:mb-8 sm:px-4 sm:py-2 sm:text-[10px] sm:tracking-[0.14em]">
+          <div className="mb-4 inline-flex max-w-full items-center gap-1.5 rounded-full border border-lime/30 bg-ink/55 px-2.5 py-1.5 text-[8px] font-semibold uppercase tracking-[0.06em] text-white/85 backdrop-blur sm:mb-8 sm:gap-2 sm:px-4 sm:py-2 sm:text-[10px] sm:tracking-[0.14em]">
             <span className="relative flex size-2 shrink-0">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-lime opacity-70" />
               <span className="relative inline-flex size-2 rounded-full bg-lime" />
@@ -166,7 +166,7 @@ export default function Hero({ onApply }) {
             initial={reduceMotion ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full text-left font-display text-[32px] xs:text-[38px] sm:text-[48px] md:text-[56px] lg:text-[66px] font-semibold leading-[1.06] tracking-[-0.015em] text-white"
+            className="w-full text-left font-display text-[29px] xs:text-[34px] sm:text-[48px] md:text-[56px] lg:text-[66px] font-semibold leading-[1.04] tracking-[-0.015em] text-white"
           >
             <span className="block">Create Beyond</span>
             <span className="mt-0.5 block min-h-[1.08em] italic text-lime sm:mt-2">
@@ -175,23 +175,23 @@ export default function Hero({ onApply }) {
             </span>
           </motion.h1>
 
-          <p className="mt-3 max-w-md text-[13px] leading-5 text-white/70 sm:mt-4 sm:text-base sm:leading-6">
+          <p className="mt-2.5 max-w-md text-[12px] leading-[1.55] text-white/70 sm:mt-4 sm:text-base sm:leading-6">
             Make the ideas, images and moments that shape campus culture.
           </p>
 
           {/* Action Buttons: Full width on small mobile, row on tablet/desktop */}
-          <div className="mt-6 flex w-full flex-col sm:flex-row items-stretch sm:items-center justify-start gap-3 sm:mt-8 sm:gap-4">
-            <button onClick={onApply} className="lime-button hero-shine rounded-full px-6 py-3 text-sm font-bold sm:px-8 sm:py-4">
-              Apply for PI <ArrowUpRight size={17} />
+          <div className="mt-4 flex w-full flex-row flex-wrap items-center justify-start gap-2 sm:mt-8 sm:gap-4">
+            <button onClick={onApply} className="lime-button hero-shine rounded-full px-4 py-2.5 text-[11px] font-bold sm:px-8 sm:py-4 sm:text-sm">
+              Apply for PI <ArrowUpRight size={14} className="sm:size-[17px]" />
             </button>
-            <a href="#process" className="ghost-button justify-center rounded-full border-white/25 px-5 py-3 text-sm text-white transition-colors hover:bg-white/10 sm:px-7 sm:py-4">
-              See how it works <ArrowDown size={15} />
+            <a href="#process" className="ghost-button justify-center rounded-full border-white/25 px-3.5 py-2.5 text-[10px] text-white transition-colors hover:bg-white/10 sm:px-7 sm:py-4 sm:text-sm">
+              See how it works <ArrowDown size={13} className="sm:size-[15px]" />
             </a>
           </div>
 
           {/* Applicants badge + Audio controller: compact and guaranteed not to overflow */}
-          <div className="mt-8 flex w-full max-w-full items-center gap-2.5 sm:mt-12 sm:gap-4">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-white/[.05] px-2.5 py-2 sm:gap-3 sm:px-4 sm:py-2.5 text-white/80 shadow-2xl shadow-black/20 backdrop-blur-md">
+          <div className="mt-5 flex w-full max-w-full items-center gap-2 sm:mt-12 sm:gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full border border-white/10 bg-white/[.05] px-2 py-1.5 sm:gap-3 sm:px-4 sm:py-2.5 text-white/80 shadow-2xl shadow-black/20 backdrop-blur-md">
               <div className="flex shrink-0 -space-x-1.5 sm:-space-x-2" aria-hidden="true">
                 {[
                   { letter: 'A', bg: '#d4ff24' },
@@ -202,16 +202,16 @@ export default function Hero({ onApply }) {
                 ].map(({ letter, bg }) => (
                   <span
                     key={letter}
-                    className="grid size-6 sm:size-8 place-items-center rounded-full border-2 border-[#05060a] text-[7px] sm:text-[9px] font-bold text-ink"
+                    className="grid size-5 sm:size-8 place-items-center rounded-full border-2 border-[#05060a] text-[6px] sm:text-[9px] font-bold text-ink"
                     style={{ backgroundColor: bg }}
                   >
                     {letter}
                   </span>
                 ))}
               </div>
-              <div className="flex min-w-0 items-center gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] text-white/80">
+              <div className="flex min-w-0 items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[13px] text-white/80">
                 <span className="flex items-baseline gap-0.5 whitespace-nowrap">
-                  <strong ref={applicantsRef} className="font-display text-sm sm:text-lg font-bold leading-none text-white">
+                  <strong ref={applicantsRef} className="font-display text-xs sm:text-lg font-bold leading-none text-white">
                     {reduceMotion ? 240 : displayedApplicants}+
                   </strong>
                   <span className="text-white/75">applied</span>
@@ -248,7 +248,7 @@ export default function Hero({ onApply }) {
           ref={figureRef}
           onMouseMove={movePointer}
           onMouseLeave={resetPointer}
-          className="hero-art relative isolate mx-auto mt-2 min-h-[300px] w-full max-w-[38rem] overflow-visible sm:min-h-[380px] lg:mx-0 lg:ml-auto lg:mt-0 lg:min-h-[540px] lg:translate-x-6 lg:-translate-y-8"
+          className="hero-art relative isolate mx-auto mt-0 min-h-[190px] w-full max-w-[22rem] overflow-visible sm:mt-2 sm:min-h-[380px] sm:max-w-[38rem] lg:mx-0 lg:ml-auto lg:mt-0 lg:min-h-[540px] lg:translate-x-6 lg:-translate-y-8"
         >
           <div className="pointer-events-none absolute inset-[8%] z-0 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(21,88,201,.28),rgba(111,155,255,.08)_38%,transparent_72%)] blur-[70px]" />
           <div

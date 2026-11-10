@@ -1,62 +1,25 @@
-import { Home, Calendar, ArrowUpRight, Sparkles } from 'lucide-react'
+import { ArrowUpRight, CalendarDays, Home, Sparkles } from 'lucide-react'
 
-export default function MobileBottomBar({ onHome, onEvents, onApply, isEventsPage, isApplyPage }) {
-  return (
-    <nav
-      aria-label="Mobile quick navigation"
-      className="fixed bottom-3 inset-x-0 z-40 px-3 pointer-events-none lg:hidden pb-safe"
-    >
-      <div className="mx-auto flex h-12 max-w-[320px] items-center justify-between rounded-full border border-white/15 bg-[#080a10]/95 px-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl pointer-events-auto">
-        {/* Home */}
-        <button
-          onClick={onHome}
-          className={`flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
-            !isEventsPage && !isApplyPage ? 'text-lime' : 'text-white/60 hover:text-white'
-          }`}
-          aria-label="Home"
-        >
-          <Home size={15} />
-          <span>Home</span>
-        </button>
-
-        {/* Events */}
-        <button
-          onClick={onEvents}
-          className={`flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider transition-colors ${
-            isEventsPage ? 'text-lime' : 'text-white/60 hover:text-white'
-          }`}
-          aria-label="Events"
-        >
-          <Calendar size={15} />
-          <span>Events</span>
-        </button>
-
-        {/* Kalakriti’26 */}
-        <a
-          href="https://kalakriti.arteza.online"
-          target="_blank"
-          rel="noreferrer"
-          className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white/60 hover:text-lime transition-colors"
-          aria-label="Kalakriti 26"
-        >
-          <div className="flex items-center">
-            <span className="font-bold text-[10px]">K'26</span>
-            <ArrowUpRight size={10} className="text-lime" />
-          </div>
-          <span>Fest</span>
-        </a>
-
-        {/* Apply CTA Pill */}
-        <button
-          onClick={onApply}
-          className="lime-button glow flex items-center gap-1 rounded-full px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_16px_rgba(212,255,36,0.35)] active:scale-95 transition-transform"
-          aria-label="Apply for recruitment"
-        >
-          <Sparkles size={11} className="text-ink" />
-          <span>JOIN</span>
-        </button>
-      </div>
-    </nav>
-  )
+function itemClass(active) {
+  return `flex min-w-0 flex-col items-center justify-center gap-1 px-2 py-1 text-[9px] font-semibold uppercase tracking-[.08em] transition-colors ${active ? 'text-lime' : 'text-white/55 active:text-white'}`
 }
 
+export default function MobileBottomBar({ onHome, onEvents, onApply, isEventsPage, isApplyPage, isLoginPage }) {
+  const isHomePage = !isEventsPage && !isApplyPage && !isLoginPage
+  return <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe lg:hidden">
+    <div className="mx-auto grid h-[58px] w-full max-w-md grid-cols-4 rounded-full border border-white/15 bg-[#10131b]/90 px-2 shadow-[0_10px_40px_rgba(0,0,0,.48),inset_0_1px_0_rgba(255,255,255,.06)] backdrop-blur-2xl">
+      <button onClick={onHome} className={itemClass(isHomePage)} aria-label="Home" aria-current={isHomePage ? 'page' : undefined}>
+        <Home size={17} strokeWidth={1.8}/><span>Home</span>
+      </button>
+      <button onClick={onEvents} className={itemClass(isEventsPage)} aria-label="Events" aria-current={isEventsPage ? 'page' : undefined}>
+        <CalendarDays size={17} strokeWidth={1.8}/><span>Events</span>
+      </button>
+      <a href="https://kalakriti.arteza.online" target="_blank" rel="noreferrer" className={itemClass(false)} aria-label="Kalakriti 26">
+        <span className="flex items-center gap-0.5 text-[12px] font-bold tracking-normal">K’26<ArrowUpRight size={11}/></span><span>Fest</span>
+      </a>
+      <button onClick={onApply} className={itemClass(isApplyPage)} aria-label="Apply" aria-current={isApplyPage ? 'page' : undefined}>
+        <Sparkles size={17} strokeWidth={1.8}/><span>Apply</span>
+      </button>
+    </div>
+  </nav>
+}
