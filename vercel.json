@@ -1,5 +1,10 @@
+
 {
   "rewrites": [
+    {
+      "source": "/av/:path*",
+      "destination": "https://api.arteza.online/av/:path*"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
