@@ -1,9 +1,7 @@
 
 const RAW_API_URL = (
   import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_BACKEND_URL ||
-  import.meta.env.VITE_API_PROXY_TARGET ||
-  ''
+  'https://api.arteza.online'
 )
   .trim()
   .replace(/\/+$/, '')
@@ -11,29 +9,14 @@ const RAW_API_URL = (
 /**
  * Resolve backend API endpoint.
  *
- * Development:
- * Uses Vite proxy with relative URLs.
- *
- * Production:
- * Uses the configured backend URL.
+ * Development: Uses Vite proxy.
+ * Production: Uses the configured backend URL.
  */
 function getAccountsEndpoint(path) {
   const cleanPath = path.replace(/^\/+|\/+$/g, '')
 
   if (import.meta.env.DEV) {
     return `/av/accounts/${cleanPath}/`
-  }
-
-  if (!RAW_API_URL) {
-    return `/av/accounts/${cleanPath}/`
-  }
-
-  if (RAW_API_URL.endsWith('/av/accounts')) {
-    return `${RAW_API_URL}/${cleanPath}/`
-  }
-
-  if (RAW_API_URL.endsWith('/av')) {
-    return `${RAW_API_URL}/accounts/${cleanPath}/`
   }
 
   return `${RAW_API_URL}/av/accounts/${cleanPath}/`
@@ -79,17 +62,21 @@ async function post(path, payload, extraHeaders = {}, timeoutMs = 15000) {
   try {
     response = await fetch(targetUrl, {
       method: 'POST',
-
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         ...extraHeaders,
       },
-
       body: JSON.stringify(payload),
       signal: controller.signal,
     })
   } catch (err) {
+    console.error('Arteza API connection error:', {
+      url: targetUrl,
+      error: err,
+      message: err.message,
+    })
+
     if (err.name === 'AbortError') {
       throw new Error(
         `Connection timed out after ${timeoutMs / 1000} seconds. Please try again.`
@@ -97,7 +84,7 @@ async function post(path, payload, extraHeaders = {}, timeoutMs = 15000) {
     }
 
     throw new Error(
-      `Unable to connect to the backend server. Please check your internet connection or backend server.`
+      `Unable to connect to backend. Check CORS and server configuration. API: ${targetUrl}`
     )
   } finally {
     clearTimeout(timer)
@@ -108,7 +95,7 @@ async function post(path, payload, extraHeaders = {}, timeoutMs = 15000) {
 
   if (!contentType.includes('application/json')) {
     throw new Error(
-      'Backend returned an unexpected response. Please check the API URL and backend configuration.'
+      `Backend returned an unexpected response (${response.status}). Check the API URL and server configuration.`
     )
   }
 
@@ -260,9 +247,7 @@ export function persistAuthSession(response, fallbackRole = 'student') {
 
   const currentUser = {
     ...user,
-
     role: user.role || fallbackRole || 'student',
-
     fullName:
       fullName ||
       user.email ||
