@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, KeyRound, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, KeyRound, Mail, RefreshCw, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
 
 export default function OtpPinForm({
@@ -9,6 +9,8 @@ export default function OtpPinForm({
   otpDetailMessage,
   errors,
   loading,
+  resendLoading = false,
+  onResendOtp,
   onOtpChange,
   onOtpKeyDown,
   onSubmit,
@@ -35,7 +37,7 @@ export default function OtpPinForm({
             ? otpDetailMessage || 'Enter your 4-digit PIN to sign in.'
             : otpDetailMessage || 'Verify the OTP sent to your registered email to continue.'}
         </p>
-        {step === 'otp' && otpTargetEmail && (
+        {otpTargetEmail && (
           <span className="mt-2 inline-block rounded-full border border-[#e4e6da] bg-[#fafaf7] px-3.5 py-0.5 font-mono text-xs font-semibold text-[#0d0f08]">
             {otpTargetEmail}
           </span>
@@ -80,11 +82,26 @@ export default function OtpPinForm({
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
-              <span>{step === 'pin' ? 'Sign In' : 'Verify & Activate Profile'}</span>
+              <span>{step === 'pin' ? 'Sign In' : 'Verify & Open Dashboard'}</span>
               <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
             </span>
           )}
         </motion.button>
+
+        {/* Resend OTP button when step === 'otp' */}
+        {step === 'otp' && onResendOtp && (
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              disabled={resendLoading}
+              onClick={onResendOtp}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#5e6355] hover:text-[#0d0f08] disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={resendLoading ? 'animate-spin' : ''} />
+              <span>{resendLoading ? 'Resending OTP...' : 'Didn’t receive code? Resend OTP'}</span>
+            </button>
+          </div>
+        )}
 
         {/* Back to form link */}
         <div className="text-center pt-1">
@@ -94,7 +111,7 @@ export default function OtpPinForm({
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5e6355] hover:text-[#0d0f08] hover:underline"
           >
             <ArrowLeft size={13} />
-            <span>Edit mobile / email</span>
+            <span>Change email / mobile</span>
           </button>
         </div>
       </form>

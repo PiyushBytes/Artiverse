@@ -218,7 +218,7 @@ export default function App() {
             onBack={() => navigate('/')}
             onLoginSuccess={(user) => {
               setCurrentUser(user)
-              navigate('/')
+              navigate('/dashboard')
             }}
           />
         ) : null}

@@ -5,8 +5,16 @@ const RAW_API_URL = (
   ''
 ).trim().replace(/\/$/, '')
 
+/**
+ * Resolve the target endpoint.
+ * In dev environment (localhost or browser port), prefer relative path '/av/accounts/...'
+ * to leverage Vite's reverse proxy and bypass browser CORS restrictions.
+ */
 function getAccountsEndpoint(path) {
   const cleanPath = path.replace(/^\/+|\/+$/g, '')
+  if (typeof window !== 'undefined' && window.location && window.location.port) {
+    return `/av/accounts/${cleanPath}/`
+  }
   if (!RAW_API_URL) {
     return `/av/accounts/${cleanPath}/`
   }
@@ -30,10 +38,15 @@ function formatValidationValue(value) {
   return value == null ? '' : String(value)
 }
 
-async function post(path, payload, extraHeaders = {}) {
+/**
+ * Robust JSON POST requester with 8-second timeout guard.
+ */
+async function post(path, payload, extraHeaders = {}, timeoutMs = 8000) {
   const targetUrl = getAccountsEndpoint(path)
-  let response
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
 
+  let response
   try {
     response = await fetch(targetUrl, {
       method: 'POST',
@@ -43,20 +56,29 @@ async function post(path, payload, extraHeaders = {}) {
         ...extraHeaders,
       },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     })
-  } catch (networkErr) {
+  } catch (err) {
+    clearTimeout(timer)
+    if (err.name === 'AbortError') {
+      throw new Error(
+        `Connection timed out (${timeoutMs / 1000}s). Server at ${RAW_API_URL || 'backend'} took too long to respond. Please check if your backend is running.`
+      )
+    }
     throw new Error(
-      'Unable to connect to the backend server. Please verify your internet connection or check if the backend is running.'
+      `Unable to reach backend server (${RAW_API_URL || 'local server'}). Please verify your backend server is running and reachable.`
     )
+  } finally {
+    clearTimeout(timer)
   }
 
   const contentType = response.headers.get('content-type') || ''
   const responseText = await response.text()
 
-  // Guard against SPA index.html fallbacks from Vite or Vercel when backend is unreachable or not configured
+  // Guard against SPA index.html fallback from Vite/Vercel when backend is not responding
   if (!contentType.includes('application/json')) {
     throw new Error(
-      'Backend server is unreachable or returned an invalid non-JSON response. Please check your backend URL and proxy settings.'
+      'Backend returned an unexpected non-JSON response. Please ensure your backend server is running.'
     )
   }
 
@@ -78,16 +100,25 @@ async function post(path, payload, extraHeaders = {}) {
     const error = new Error(message)
     error.status = response.status
     error.fieldErrors = fieldErrors
+    error.data = data
     throw error
   }
   return data
 }
 
+// ── 1. Create Profile API ──
 export const createProfile = (payload) => post('create-profile', payload)
-export const requestLoginOtp = ({ identifier }) => post('login', { identifier })
+
+// ── 2. Resend OTP API ──
+export const resendOtp = ({ identifier }) => post('resend-otp', { identifier })
+
+// ── 3. Verify OTP API ──
 export const verifyOtp = ({ identifier, otp }) => post('verify-otp', { identifier, otp })
+
+// ── 4. Login API (Identifier + PIN) ──
 export const loginWithPin = ({ identifier, pin }) => post('login', { identifier, pin })
 
+// ── 5. Logout API ──
 export function logoutFromServer() {
   let tokens = null
   try {
@@ -105,6 +136,55 @@ export function logoutFromServer() {
   })
 }
 
+// ── 6. Account Existence Check against Database ──
+export async function checkAccount(identifier) {
+  try {
+    // Attempt probing login with placeholder PIN to test identifier presence in database
+    const response = await post('login', { identifier, pin: '____' })
+    // If by any chance it accepted, account exists
+    return { exists: true, status: 'has_pin', user: response.user }
+  } catch (err) {
+    const msg = (err.message || '').toLowerCase()
+
+    // Case A: User does NOT exist in database -> redirect to register flow
+    if (
+      msg.includes('not found') ||
+      msg.includes('does not exist') ||
+      msg.includes('no user') ||
+      msg.includes('no account') ||
+      msg.includes('not registered') ||
+      err.status === 404
+    ) {
+      return { exists: false, status: 'not_found', message: err.message }
+    }
+
+    // Case B: Signup pending OTP verification
+    if (
+      msg.includes('verify') ||
+      msg.includes('is_mail_verified') ||
+      msg.includes('pending')
+    ) {
+      return { exists: true, status: 'pending_otp', message: err.message }
+    }
+
+    // Case C: User exists but PIN was wrong or required -> prompt for user's PIN!
+    if (
+      msg.includes('pin') ||
+      msg.includes('invalid') ||
+      msg.includes('incorrect') ||
+      msg.includes('credential') ||
+      err.status === 400 ||
+      err.status === 401
+    ) {
+      return { exists: true, status: 'has_pin', message: err.message }
+    }
+
+    // Connection or network error
+    throw err
+  }
+}
+
+// ── Session persistence utilities ──
 export function persistAuthSession(response, fallbackRole = 'student') {
   if (!response?.user) {
     throw new Error('The server response did not include a valid user profile.')

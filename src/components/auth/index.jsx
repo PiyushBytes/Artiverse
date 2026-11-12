@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import AuthHeader from './AuthHeader'
 import AuthHero from './AuthHero'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 import OtpPinForm from './OtpPinForm'
-import { createProfile, loginWithPin, persistAuthSession, requestLoginOtp, verifyOtp } from '../../api/auth'
+import {
+  checkAccount,
+  createProfile,
+  loginWithPin,
+  persistAuthSession,
+  resendOtp,
+  verifyOtp,
+} from '../../api/auth'
 
 export default function AuthPage({
   mode = 'login', // 'login' | 'register'
@@ -47,6 +54,7 @@ export default function AuthPage({
   // Status & Error States
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
 
   useEffect(() => {
@@ -56,7 +64,7 @@ export default function AuthPage({
     setOtpValues(['', '', '', '', '', ''])
   }, [mode])
 
-  // Login validation & initiation
+  // ── Step 1: Login Submission (Checks database for email/mobile) ──
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
     setErrors({})
@@ -66,28 +74,102 @@ export default function AuthPage({
     const identifier = rawIdentifier.includes('@')
       ? rawIdentifier.toLowerCase()
       : rawIdentifier.replace(/\D/g, '')
+
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)
     const validPhone = /^\d{10}$/.test(identifier)
     if (!validEmail && !validPhone) {
-      setErrors({ loginIdentifier: 'Enter a valid email or 10-digit mobile number.' })
+      setErrors({ loginIdentifier: 'Enter a valid email address or 10-digit mobile number.' })
       return
     }
 
     setLoading(true)
     try {
-      const response = await requestLoginOtp({ identifier })
-      setOtpTargetEmail(identifier)
-      setOtpDetailMessage(response?.detail || `Enter your 4-digit PIN for ${identifier}.`)
-      setOtpValues(['', '', '', '', '', ''])
-      setStep('pin')
+      // Probe backend database to check if this user exists
+      const checkResult = await checkAccount(identifier)
+
+      if (checkResult.exists) {
+        if (checkResult.status === 'pending_otp') {
+          // Signup is pending email verification
+          setOtpTargetEmail(identifier)
+          setOtpDetailMessage('Account found! Your signup is pending email verification.')
+          setOtpValues(['', '', '', '', '', ''])
+          setStep('otp')
+          setStatusMessage({
+            type: 'info',
+            text: 'Please enter the OTP sent to your email to activate your account.',
+          })
+          // Automatically trigger resend OTP so the user has a fresh code
+          try {
+            await resendOtp({ identifier })
+          } catch {
+            // Non-blocking
+          }
+        } else {
+          // User exists with PIN: Proceed to PIN screen
+          setOtpTargetEmail(identifier)
+          setOtpDetailMessage(`Account matched for ${identifier}. Enter your 4-digit PIN to sign in.`)
+          setOtpValues(['', '', '', '', '', ''])
+          setStep('pin')
+        }
+      } else {
+        // User NOT found in database: automatically guide into register flow
+        setStatusMessage({
+          type: 'info',
+          text: 'No account found with this email. Taking you to registration…',
+        })
+        if (validEmail) setRegEmail(identifier)
+        if (validPhone) setRegPhone(identifier)
+
+        setTimeout(() => {
+          onNavigateRegister?.()
+        }, 700)
+      }
     } catch (err) {
-      setErrors({ loginIdentifier: err.message || 'Unable to sign in. Please verify backend connection.' })
+      // Backend connectivity or general server error
+      setErrors({
+        loginIdentifier: err.message || 'Unable to reach backend server. Please verify your connection.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  // Register validation
+  // ── Step 2: Validate 4-Digit PIN & Login ──
+  const handlePinLogin = async (e) => {
+    e.preventDefault()
+    setErrors({})
+    setStatusMessage(null)
+
+    const enteredPin = otpValues.slice(0, 4).join('')
+    if (enteredPin.length !== 4) {
+      setErrors({ otp: 'Please enter your 4-digit PIN.' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await loginWithPin({
+        identifier: otpTargetEmail || loginIdentifier.trim(),
+        pin: enteredPin,
+      })
+
+      const user = persistAuthSession(response)
+      setStatusMessage({
+        type: 'success',
+        text: 'Signed in successfully! Opening dashboard…',
+      })
+      setTimeout(() => {
+        onLoginSuccess?.(user)
+      }, 600)
+    } catch (err) {
+      const msg = err.message || 'Incorrect PIN. Please try again.'
+      setErrors({ otp: msg })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 3: Registration Submission (Creates Profile & Sends OTP) ──
   const handleRegisterSubmit = async (e) => {
     e.preventDefault()
     setErrors({})
@@ -143,13 +225,14 @@ export default function AuthPage({
         ...(selectedRole === 'lead' ? { committee_name: committeeName.trim() } : {}),
       })
 
-      setOtpTargetEmail(response.email || cleanEmail)
+      const target = response.email || cleanEmail
+      setOtpTargetEmail(target)
       setOtpDetailMessage(response.detail || 'Verify the OTP sent to your email to create your profile.')
       setOtpValues(['', '', '', '', '', ''])
       setStep('otp')
       setStatusMessage({
         type: 'success',
-        text: 'OTP sent! Please check your email inbox.',
+        text: response.detail || `Verification OTP sent to ${target}!`,
       })
     } catch (err) {
       setStatusMessage({
@@ -161,7 +244,61 @@ export default function AuthPage({
     }
   }
 
-  // OTP input handling
+  // ── Step 4: Verify 6-Digit Email OTP ──
+  const handleOtpVerify = async (e) => {
+    e.preventDefault()
+    setErrors({})
+    setStatusMessage(null)
+
+    const enteredOtp = otpValues.slice(0, 6).join('')
+    if (enteredOtp.length !== 6) {
+      setErrors({ otp: 'Please enter all 6 digits of the OTP.' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const response = await verifyOtp({
+        identifier: otpTargetEmail,
+        otp: enteredOtp,
+      })
+
+      const user = persistAuthSession(response, selectedRole)
+      setStatusMessage({
+        type: 'success',
+        text: 'Account verified successfully! Opening dashboard…',
+      })
+      setTimeout(() => {
+        onLoginSuccess?.(user)
+      }, 600)
+    } catch (err) {
+      setErrors({ otp: err.message || 'Invalid or expired OTP. Please check and try again.' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Step 5: Resend OTP Handler ──
+  const handleResendOtp = async () => {
+    if (!otpTargetEmail) return
+    setResendLoading(true)
+    try {
+      const response = await resendOtp({ identifier: otpTargetEmail })
+      setStatusMessage({
+        type: 'success',
+        text: response.detail || 'A new OTP has been sent to your registered email.',
+      })
+    } catch (err) {
+      setStatusMessage({
+        type: 'error',
+        text: err.message || 'Unable to resend OTP. Please wait a moment and try again.',
+      })
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
+  // ── OTP & PIN digit input handling ──
   const handleOtpChange = (index, value) => {
     const digitCount = step === 'pin' ? 4 : 6
     const cleaned = value.replace(/\D/g, '')
@@ -190,74 +327,6 @@ export default function AuthPage({
   const handleOtpKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otpValues[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus()
-    }
-  }
-
-  // Verify OTP
-  const handleOtpVerify = async (e) => {
-    e.preventDefault()
-    setErrors({})
-    setStatusMessage(null)
-
-    const enteredOtp = otpValues.slice(0, 6).join('')
-    if (enteredOtp.length !== 6) {
-      setErrors({ otp: 'Please enter all 6 digits of the OTP.' })
-      return
-    }
-
-    setLoading(true)
-    try {
-      const response = await verifyOtp({
-        email: otpTargetEmail,
-        otp: enteredOtp,
-      })
-
-      const user = persistAuthSession(response, selectedRole)
-      setStatusMessage({
-        type: 'success',
-        text: 'Account verified successfully! Redirecting…',
-      })
-      setTimeout(() => {
-        onLoginSuccess?.(user)
-      }, 700)
-    } catch (err) {
-      setErrors({ otp: err.message || 'Invalid or expired OTP. Please try again.' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // PIN Login
-  const handlePinLogin = async (e) => {
-    e.preventDefault()
-    setErrors({})
-    setStatusMessage(null)
-
-    const enteredPin = otpValues.slice(0, 4).join('')
-    if (enteredPin.length !== 4) {
-      setErrors({ otp: 'Please enter your 4-digit PIN.' })
-      return
-    }
-
-    setLoading(true)
-    try {
-      const response = await loginWithPin({
-        identifier: otpTargetEmail || loginIdentifier.trim(),
-        pin: enteredPin,
-      })
-
-      const user = persistAuthSession(response)
-      setStatusMessage({
-        type: 'success',
-        text: 'Signed in successfully! Redirecting…',
-      })
-      setTimeout(() => {
-        onLoginSuccess?.(user)
-      }, 700)
-    } catch (err) {
-      setErrors({ otp: err.message || 'Incorrect PIN or account not found.' })
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -290,7 +359,7 @@ export default function AuthPage({
               transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
               className="relative w-full max-w-[460px] rounded-[28px] border border-[#e4e6da] bg-white p-6 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] backdrop-blur-xl"
             >
-              {/* Status Message */}
+              {/* Status Banner */}
               <AnimatePresence mode="wait">
                 {statusMessage && (
                   <motion.div
@@ -300,11 +369,15 @@ export default function AuthPage({
                     className={`mb-4 flex items-start gap-2.5 rounded-2xl border p-3 text-xs font-medium ${
                       statusMessage.type === 'success'
                         ? 'border-[#d4ff1f] bg-[#d4ff1f]/20 text-[#414d1e]'
+                        : statusMessage.type === 'info'
+                        ? 'border-blue-200 bg-blue-50 text-blue-800'
                         : 'border-red-200 bg-red-50 text-red-700'
                     }`}
                   >
                     {statusMessage.type === 'success' ? (
                       <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#839b3d]" />
+                    ) : statusMessage.type === 'info' ? (
+                      <Info size={16} className="mt-0.5 shrink-0 text-blue-600" />
                     ) : (
                       <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" />
                     )}
@@ -313,7 +386,7 @@ export default function AuthPage({
                 )}
               </AnimatePresence>
 
-              {/* Step Routing: Form vs PIN / OTP */}
+              {/* Step Routing: Form vs PIN vs OTP */}
               {step === 'pin' || step === 'otp' ? (
                 <OtpPinForm
                   step={step}
@@ -323,6 +396,8 @@ export default function AuthPage({
                   otpDetailMessage={otpDetailMessage}
                   errors={errors}
                   loading={loading}
+                  resendLoading={resendLoading}
+                  onResendOtp={handleResendOtp}
                   onOtpChange={handleOtpChange}
                   onOtpKeyDown={handleOtpKeyDown}
                   onSubmit={step === 'pin' ? handlePinLogin : handleOtpVerify}
