@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import {
   Navbar,
@@ -108,7 +108,9 @@ export default function App() {
 
   useEffect(() => {
     const sync = () => {
-      setRoute(getRoute())
+      startTransition(() => {
+        setRoute(getRoute())
+      })
       syncUser()
     }
     window.addEventListener('popstate', sync)
@@ -124,8 +126,92 @@ export default function App() {
     if (window.location.pathname !== cleanPath) {
       window.history.pushState({}, '', path)
     }
-    setRoute(getRoute())
-    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+    startTransition(() => {
+      setRoute(getRoute())
+    })
+    try {
+      window.scrollTo(0, 0)
+    } catch {
+      // safe fallback
+    }
+  }
+
+  const renderCurrentRoute = () => {
+    switch (route) {
+      case 'login':
+      case 'register':
+        return (
+          <AuthPage
+            mode={route}
+            onNavigateLogin={() => navigate('/login')}
+            onNavigateRegister={() => navigate('/register')}
+            onBack={() => navigate('/')}
+            onLoginSuccess={(user) => {
+              setCurrentUser(user)
+              navigate('/dashboard')
+            }}
+          />
+        )
+      case 'apply':
+        return <ApplyPage onBack={() => navigate('/')} />
+      case 'dashboard':
+        return (
+          <Dashboard
+            currentUser={currentUser}
+            onBack={() => navigate('/')}
+            onToast={setToast}
+          />
+        )
+      case 'events':
+        return <Events onJoin={() => navigate('/apply')} />
+      case 'committees':
+        return <CommitteesPage onNavigate={navigate} onToast={setToast} />
+      case 'how-it-works':
+        return <HowItWorksPage onNavigate={navigate} />
+      case 'about':
+        return <AboutPage onNavigate={navigate} />
+      case 'registrations':
+        return (
+          <RegistrationsPage
+            currentUser={currentUser}
+            onNavigate={navigate}
+            onToast={setToast}
+          />
+        )
+      case 'profile':
+        return (
+          <ProfilePage
+            currentUser={currentUser}
+            onSignOut={signOut}
+            onToast={setToast}
+          />
+        )
+      case 'settings':
+        return (
+          <SettingsPage
+            currentUser={currentUser}
+            onSignOut={signOut}
+            onToast={setToast}
+          />
+        )
+      case 'contact':
+        return <ContactPage onToast={setToast} />
+      case 'search':
+        return <SearchPage onNavigate={navigate} />
+      case 'home':
+      default:
+        return (
+          <div className="w-full">
+            <Hero onApply={() => navigate('/apply')} />
+            <EventMarquee />
+            <Products />
+            <HowItWorks />
+            <Stats />
+            <FAQSection />
+            <CTA onApply={() => navigate('/apply')} />
+          </div>
+        )
+    }
   }
 
   const signOut = async () => {
@@ -208,88 +294,11 @@ export default function App() {
         />
       )}
 
-      {/* ── MAIN CONTENT ── */}
+      {/* ── MAIN CONTENT (Keyed by route to cleanly isolate DOM subtrees) ── */}
       <main className={!isAuth ? 'pb-[calc(84px+env(safe-area-inset-bottom))] min-[900px]:pb-0' : ''}>
-        {route === 'login' || route === 'register' ? (
-          <AuthPage
-            mode={route}
-            onNavigateLogin={() => navigate('/login')}
-            onNavigateRegister={() => navigate('/register')}
-            onBack={() => navigate('/')}
-            onLoginSuccess={(user) => {
-              setCurrentUser(user)
-              navigate('/dashboard')
-            }}
-          />
-        ) : null}
-
-        {route === 'apply' ? <ApplyPage onBack={() => navigate('/')} /> : null}
-
-        {route === 'dashboard' ? (
-          <Dashboard
-            currentUser={currentUser}
-            onBack={() => navigate('/')}
-            onToast={setToast}
-          />
-        ) : null}
-
-        {route === 'events' ? <Events onJoin={() => navigate('/apply')} /> : null}
-
-        {route === 'committees' ? (
-          <CommitteesPage onNavigate={navigate} onToast={setToast} />
-        ) : null}
-
-        {route === 'how-it-works' ? (
-          <HowItWorksPage onNavigate={navigate} />
-        ) : null}
-
-        {route === 'about' ? (
-          <AboutPage onNavigate={navigate} />
-        ) : null}
-
-        {route === 'registrations' ? (
-          <RegistrationsPage
-            currentUser={currentUser}
-            onNavigate={navigate}
-            onToast={setToast}
-          />
-        ) : null}
-
-        {route === 'profile' ? (
-          <ProfilePage
-            currentUser={currentUser}
-            onSignOut={signOut}
-            onToast={setToast}
-          />
-        ) : null}
-
-        {route === 'settings' ? (
-          <SettingsPage
-            currentUser={currentUser}
-            onSignOut={signOut}
-            onToast={setToast}
-          />
-        ) : null}
-
-        {route === 'contact' ? (
-          <ContactPage onToast={setToast} />
-        ) : null}
-
-        {route === 'search' ? (
-          <SearchPage onNavigate={navigate} />
-        ) : null}
-
-        {route === 'home' && (
-          <>
-            <Hero onApply={() => navigate('/apply')} />
-            <EventMarquee />
-            <Products />
-            <HowItWorks />
-            <Stats />
-            <FAQSection />
-            <CTA onApply={() => navigate('/apply')} />
-          </>
-        )}
+        <div key={route} className="w-full">
+          {renderCurrentRoute()}
+        </div>
       </main>
 
       {/* ── DESKTOP SIDE DOCK (Strictly 4 buttons, min-[900px]:flex hidden) ── */}

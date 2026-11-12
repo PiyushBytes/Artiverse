@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { stepsByProduct } from '../../config/landingData'
 import Reveal from '../common/Reveal'
@@ -10,7 +10,7 @@ export default function HowItWorks() {
   const sectionRef = useRef(null)
   const reduceMotion = useReducedMotion()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setActiveStep(0)
     if (reduceMotion || window.innerWidth < 1024) return undefined
 

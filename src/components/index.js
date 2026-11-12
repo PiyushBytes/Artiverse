@@ -1,5 +1,5 @@
 // Central component barrel export
-export { default as Navbar } from './navbar'
+export { default as Navbar } from './navbar/index.jsx'
 export { default as Hero } from './hero'
 export { default as EventMarquee } from './marquee'
 export { default as Products } from './products'

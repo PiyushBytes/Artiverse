@@ -12,9 +12,24 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Artiverse Application Error:', error, errorInfo)
+    const msg = error?.message || ''
+
+    // If a transient DOM reconciliation error occurs (e.g. Google Translate or an extension modified DOM nodes)
+    if (msg.includes('removeChild') || msg.includes('not a child of this node')) {
+      const lastRecovery = sessionStorage.getItem('artiverse_dom_recovery')
+      const now = Date.now()
+      if (!lastRecovery || now - Number(lastRecovery) > 5000) {
+        sessionStorage.setItem('artiverse_dom_recovery', String(now))
+        window.location.reload()
+      }
+    }
   }
 
   handleReload = () => {
+    window.location.reload()
+  }
+
+  handleGoHome = () => {
     window.location.href = '/'
   }
 
@@ -33,14 +48,14 @@ export default class ErrorBoundary extends React.Component {
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={this.handleReload}
                 className="lime-button rounded-full px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#0d0f08]"
               >
                 Reload Page
               </button>
               <button
                 type="button"
-                onClick={this.handleReload}
+                onClick={this.handleGoHome}
                 className="rounded-full border border-[#e4e6da] bg-[#f5f6ef] px-5 py-2.5 text-xs font-semibold text-[#0d0f08] transition hover:bg-white"
               >
                 Go to Home
@@ -54,4 +69,3 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children
   }
 }
-
