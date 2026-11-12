@@ -1,3 +1,0 @@
-import { siteConfig } from '../config/siteConfig'
-import { useCountdown } from '../hooks/useCountdown'
-export default function RecruitmentStrip(){const t=useCountdown(siteConfig.recruitment.deadline);return <div className="border-y border-lime/20 bg-lime/[.05] py-4"><div className="container-x flex flex-wrap items-center justify-between gap-3 text-sm"><p><span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-lime"/>Applications close: <b>{siteConfig.recruitment.closeDate}</b> · Online PIs: <b>{siteConfig.recruitment.piDateRange}</b></p><p className="font-semibold text-lime tabular-nums">{t.days}d {t.hours}h {t.minutes}m {t.seconds}s left</p></div></div>}

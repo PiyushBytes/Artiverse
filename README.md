@@ -1,9 +1,11 @@
-# Artiverse Recruitment Website
+# Artiverse Recruitment & Campus Culture Platform
 
-A responsive React + Vite + Tailwind CSS v4 recruitment landing page.
+A production-grade, highly responsive React 19 + Vite + Tailwind CSS v4 campus events and committee management platform, engineered at MSIT, Kolkata.
+
+For the comprehensive engineering structure, component breakdown, and "where is what" documentation, see [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md).
 
 ## Requirements
-- Node.js LTS
+- Node.js LTS (v18+)
 - npm
 
 ## Run locally

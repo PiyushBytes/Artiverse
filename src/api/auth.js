@@ -1,4 +1,23 @@
-const API_BASE = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '')
+const RAW_API_URL = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.VITE_API_PROXY_TARGET ||
+  ''
+).trim().replace(/\/$/, '')
+
+function getAccountsEndpoint(path) {
+  const cleanPath = path.replace(/^\/+|\/+$/g, '')
+  if (!RAW_API_URL) {
+    return `/av/accounts/${cleanPath}/`
+  }
+  if (RAW_API_URL.endsWith('/av/accounts')) {
+    return `${RAW_API_URL}/${cleanPath}/`
+  }
+  if (RAW_API_URL.endsWith('/av')) {
+    return `${RAW_API_URL}/accounts/${cleanPath}/`
+  }
+  return `${RAW_API_URL}/av/accounts/${cleanPath}/`
+}
 
 function formatValidationValue(value) {
   if (Array.isArray(value)) return value.map(formatValidationValue).filter(Boolean).join(' ')
@@ -12,24 +31,42 @@ function formatValidationValue(value) {
 }
 
 async function post(path, payload, extraHeaders = {}) {
-  const response = await fetch(`${API_BASE}/av/accounts/${path}/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...extraHeaders },
-    body: JSON.stringify(payload),
-  })
+  const targetUrl = getAccountsEndpoint(path)
+  let response
+
+  try {
+    response = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...extraHeaders,
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch (networkErr) {
+    throw new Error(
+      'Unable to connect to the backend server. Please verify your internet connection or check if the backend is running.'
+    )
+  }
+
+  const contentType = response.headers.get('content-type') || ''
   const responseText = await response.text()
+
+  // Guard against SPA index.html fallbacks from Vite or Vercel when backend is unreachable or not configured
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      'Backend server is unreachable or returned an invalid non-JSON response. Please check your backend URL and proxy settings.'
+    )
+  }
+
   let data = {}
-  let plainTextError = ''
   try {
     data = responseText ? JSON.parse(responseText) : {}
   } catch {
-    data = {}
-    if (responseText) {
-      plainTextError = new DOMParser()
-        .parseFromString(responseText, 'text/html')
-        .body.textContent.replace(/\s+/g, ' ').trim().slice(0, 500)
-    }
+    throw new Error('Server returned an unreadable response.')
   }
+
   if (!response.ok) {
     const validation = data.errors || (data.detail && typeof data.detail === 'object' ? data.detail : null)
     const fieldErrors = validation && !Array.isArray(validation) ? Object.fromEntries(
@@ -37,7 +74,7 @@ async function post(path, payload, extraHeaders = {}) {
     ) : {}
     const fieldMessage = Object.entries(fieldErrors).map(([field, message]) => `${field}: ${message}`).join(' ')
     const detail = typeof data.detail === 'string' ? data.detail : data.message || data.error
-    const message = formatValidationValue(detail) || formatValidationValue(validation) || fieldMessage || plainTextError || `Request failed (${response.status}).`
+    const message = formatValidationValue(detail) || formatValidationValue(validation) || fieldMessage || `Request failed (${response.status}).`
     const error = new Error(message)
     error.status = response.status
     error.fieldErrors = fieldErrors
@@ -47,6 +84,7 @@ async function post(path, payload, extraHeaders = {}) {
 }
 
 export const createProfile = (payload) => post('create-profile', payload)
+export const requestLoginOtp = ({ identifier }) => post('login', { identifier })
 export const verifyOtp = ({ identifier, otp }) => post('verify-otp', { identifier, otp })
 export const loginWithPin = ({ identifier, pin }) => post('login', { identifier, pin })
 
@@ -67,12 +105,19 @@ export function logoutFromServer() {
   })
 }
 
-export function persistAuthSession(response) {
-  if (!response?.user) throw new Error('The server response did not include a user profile.')
+export function persistAuthSession(response, fallbackRole = 'student') {
+  if (!response?.user) {
+    throw new Error('The server response did not include a valid user profile.')
+  }
 
   const user = response.user
   const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ')
-  const currentUser = { ...user, fullName: fullName || user.email || user.phone_number || 'Creator' }
+  const userRole = user.role || fallbackRole || 'student'
+  const currentUser = {
+    ...user,
+    role: userRole,
+    fullName: fullName || user.email || user.phone_number || 'Creator',
+  }
   localStorage.setItem('artiverse_current_user', JSON.stringify(currentUser))
   if (response.tokens) {
     localStorage.setItem('artiverse_auth_tokens', JSON.stringify(response.tokens))
