@@ -30,7 +30,7 @@ export default function ContactPage({ onToast }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] pt-28 pb-20 px-6">
+    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] px-4 pb-20 pt-8 min-[900px]:px-6 min-[900px]:pt-28">
       <div className="mx-auto max-w-[1000px]">
         {/* Header */}
         <div className="text-center max-w-xl mx-auto">
@@ -91,9 +91,9 @@ export default function ContactPage({ onToast }) {
               <span className="grid size-12 place-items-center rounded-2xl bg-[#f5f6ef] border border-[#e4e6da] text-[#0d0f08]">
                 <MapPin size={20} />
               </span>
-              <h4 className="mt-3 text-sm font-bold text-[#0d0f08]">Campus Desk</h4>
+              <h4 className="mt-3 text-sm font-bold text-[#0d0f08]">Campus Support Desk</h4>
               <p className="mt-1 text-xs text-[#5e6355] leading-relaxed">
-                Meghnad Saha Institute of Technology, Madurdaha, Kolkata, West Bengal 700150.
+                Dedicated student assistance and council onboarding helpline.
               </p>
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function ContactPage({ onToast }) {
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Priya Sen"
+                      placeholder="Your full name"
                       className="w-full rounded-xl border border-[#e4e6da] bg-[#fafaf7] px-3.5 py-2.5 text-xs outline-none focus:border-[#0d0f08]"
                     />
                   </div>
@@ -146,7 +146,7 @@ export default function ContactPage({ onToast }) {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@msit.edu"
+                      placeholder="your.email@university.edu"
                       className="w-full rounded-xl border border-[#e4e6da] bg-[#fafaf7] px-3.5 py-2.5 text-xs outline-none focus:border-[#0d0f08]"
                     />
                   </div>

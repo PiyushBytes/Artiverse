@@ -33,7 +33,7 @@ export default function SettingsPage({ currentUser, onSignOut, onToast }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] pt-28 pb-20 px-6">
+    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] px-4 pb-20 pt-8 min-[900px]:px-6 min-[900px]:pt-28">
       <div className="mx-auto max-w-[800px]">
         {/* Header */}
         <div className="border-b border-[#e4e6da] pb-6">

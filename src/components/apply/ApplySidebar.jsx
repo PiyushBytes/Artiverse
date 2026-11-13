@@ -10,7 +10,7 @@ const perks = [
 
 export default function ApplySidebar({ onBack }) {
   return (
-    <div className="flex flex-col justify-center px-6 pb-10 pt-28 sm:px-10 lg:w-[42%] lg:px-12 lg:pb-16 lg:pt-32 xl:px-16">
+    <div className="flex flex-col justify-center px-4 pb-8 pt-10 sm:px-10 sm:pb-10 sm:pt-14 lg:w-[42%] lg:px-12 lg:pb-16 lg:pt-32 xl:px-16">
       <button
         onClick={onBack}
         className="group mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[12px] font-medium uppercase tracking-[0.14em] text-white/50 transition-all hover:border-white/25 hover:text-white/80 lg:mb-12"
@@ -28,7 +28,7 @@ export default function ApplySidebar({ onBack }) {
       </h1>
 
       <p className="mt-5 max-w-sm text-[15px] leading-7 text-white/50">
-        Apply for a personal interview and become part of MSIT's creative community. Shape the art,
+        Apply for a personal interview and become part of our creative community. Shape the art,
         ideas and moments that define campus culture.
       </p>
 

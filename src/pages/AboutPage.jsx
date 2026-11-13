@@ -14,7 +14,7 @@ export default function AboutPage({ onNavigate }) {
   const reduceMotion = useReducedMotion()
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] pt-28 pb-20 px-6">
+    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] px-4 pb-20 pt-8 min-[900px]:px-6 min-[900px]:pt-28">
       <div className="mx-auto max-w-[1200px]">
         {/* Hero Banner */}
         <div className="max-w-3xl">
@@ -23,7 +23,7 @@ export default function AboutPage({ onNavigate }) {
             <span>Our Campus Story</span>
           </div>
           <h1 className="mt-4 font-display text-4xl sm:text-6xl font-medium tracking-tight text-[#0d0f08] leading-[1.08]">
-            Built at MSIT, Kolkata. <br />
+            Built for Campus Communities. <br />
             <i className="text-[#839b3d]">For the culture makers.</i>
           </h1>
           <p className="mt-4 text-base sm:text-lg text-[#5e6355] leading-relaxed">
@@ -78,16 +78,16 @@ export default function AboutPage({ onNavigate }) {
               <span>Headquarters & Origin</span>
             </div>
             <h2 className="mt-2 font-display text-2xl sm:text-3xl font-semibold text-[#0d0f08]">
-              Meghnad Saha Institute of Technology
+              Campus Ecosystem Headquarters
             </h2>
             <p className="mt-2 text-sm text-[#5e6355] max-w-xl">
-              Uchhepota, Madurdaha, Kolkata, West Bengal 700150. Initiated by student leads and designers passionate about modernizing campus workflows.
+              Modern campus infrastructure for university councils, club leads, and student creators worldwide.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#424638]">
               <span className="flex items-center gap-1.5 rounded-full bg-[#f6f7f2] border border-[#e4e6da] px-3 py-1">
                 <CheckCircle2 size={13} className="text-[#839b3d]" />
-                MSIT Student Council Approved
+                Campus Council Approved
               </span>
               <span className="flex items-center gap-1.5 rounded-full bg-[#f6f7f2] border border-[#e4e6da] px-3 py-1">
                 <CheckCircle2 size={13} className="text-[#839b3d]" />

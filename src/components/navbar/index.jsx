@@ -10,9 +10,8 @@ export default function Navbar({
   currentUser = null,
   onSignOut = () => {},
   onOpenNotifications = () => {},
-  onOpenProfile = () => {},
-  onOpenSettings = () => {},
   onNavigate = () => {},
+  onDashboardPage = false,
 }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,8 +69,8 @@ export default function Navbar({
       <div
         className={`relative mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between rounded-full border px-4 transition-all sm:px-6 ${
           scrolled
-            ? 'border-[#e4e6da]/80 bg-white/90 shadow-[0_1px_2px_rgba(0,0,0,.04),0_18px_40px_-14px_rgba(0,0,0,.16)] backdrop-blur-xl'
-            : 'border-[#e4e6da] bg-white/85 backdrop-blur-md'
+            ? 'border-[#e4e6da]/80 bg-[#fafaf5]/95 shadow-[0_1px_2px_rgba(0,0,0,.04),0_18px_40px_-14px_rgba(0,0,0,.16)] backdrop-blur-xl'
+            : 'border-[#e4e6da] bg-[#fafaf5]/95 backdrop-blur-md'
         }`}
       >
         <NavBrand onNavigate={onNavigate} />
@@ -81,8 +80,8 @@ export default function Navbar({
           onLogin={onLogin}
           onSignOut={onSignOut}
           onOpenNotifications={onOpenNotifications}
-          onOpenProfile={onOpenProfile}
-          onOpenSettings={onOpenSettings}
+          onNavigate={onNavigate}
+          onDashboardPage={onDashboardPage}
           menuOpen={menuOpen}
           setMenuOpen={setMenuOpen}
         />

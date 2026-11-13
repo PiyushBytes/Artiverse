@@ -31,12 +31,13 @@ function CountUp({ value, suffix }) {
 
 export default function StatCard({ stat, index }) {
   return (
-    <Reveal delay={index * 0.06} className="text-center">
-      <p className="text-5xl font-semibold tracking-[-0.04em] text-[#0d0f08] sm:text-6xl">
+    <Reveal delay={index * 0.06} className="text-center px-4">
+      <p className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.04em] text-[#0d0f08]">
         <CountUp value={stat.value} suffix={stat.suffix} />
       </p>
-      <p className="mt-2 text-sm text-[#5e6355]">{stat.label}</p>
+      <p className="mt-2 text-xs sm:text-sm font-medium text-[#5e6355]">
+        {stat.label}
+      </p>
     </Reveal>
   )
 }
-

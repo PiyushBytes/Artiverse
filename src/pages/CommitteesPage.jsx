@@ -1,269 +1,441 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   Building2,
   CheckCircle2,
-  Filter,
-  GraduationCap,
+  Clock,
+  Palette,
   Plus,
+  RotateCw,
   Search,
-  Sparkles,
+  Settings,
+  Shield,
+  ShieldCheck,
   Users,
 } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
+import { getCommitteeList } from '../api/committee'
+import CreateCommitteeWizard from '../components/dashboard/CreateCommitteeWizard'
 
-const allCommitteesData = [
-  {
-    id: 'c1',
-    name: 'Design Committee',
-    category: 'Creative',
-    tagline: 'Visual identities, festival branding, and creative design systems at MSIT.',
-    college: 'MSIT, Kolkata',
-    members: 38,
-    status: 'open',
-    domains: ['UI/UX', 'Branding', 'Illustration', 'Motion'],
-    lead: 'Priya Sen (President)',
-    icon: '🎨',
-  },
-  {
-    id: 'c2',
-    name: 'Cine Club MSIT',
-    category: 'Cultural',
-    tagline: 'Film screenings, cinematography workshops, and student film festivals.',
-    college: 'MSIT, Kolkata',
-    members: 46,
-    status: 'open',
-    domains: ['Screenwriting', 'Cinematography', 'Sound', 'Editing'],
-    lead: 'Rohan Banerjee (Lead)',
-    icon: '🎬',
-  },
-  {
-    id: 'c3',
-    name: 'ByteForge Tech Society',
-    category: 'Technical',
-    tagline: 'Open source builds, hackathons, and AI/Web development community.',
-    college: 'MSIT, Kolkata',
-    members: 62,
-    status: 'open',
-    domains: ['Fullstack', 'AI/ML', 'DevOps', 'App Dev'],
-    lead: 'Siddharth Roy (Convenor)',
-    icon: '⚡',
-  },
-  {
-    id: 'c4',
-    name: 'Literary & Debating Society',
-    category: 'Literary',
-    tagline: 'Inter-college parliamentary debates, youth parliaments, and poetry slams.',
-    college: 'MSIT, Kolkata',
-    members: 32,
-    status: 'open',
-    domains: ['Parliamentary Debate', 'Content Writing', 'Editorial'],
-    lead: 'Megha Dutta (Secretary)',
-    icon: '🎙️',
-  },
-  {
-    id: 'c5',
-    name: 'Rotaract Club MSIT',
-    category: 'Social Impact',
-    tagline: 'Community welfare, blood donation camps, and campus social outreach drives.',
-    college: 'MSIT, Kolkata',
-    members: 74,
-    status: 'closed',
-    domains: ['Social Work', 'PR', 'Logistics'],
-    lead: 'Anik Paul (President)',
-    icon: '🤝',
-  },
-  {
-    id: 'c6',
-    name: 'Rhythm & Beats Band Club',
-    category: 'Cultural',
-    tagline: 'Campus music bands, instrumental jams, and annual festival headlining acts.',
-    college: 'MSIT, Kolkata',
-    members: 28,
-    status: 'open',
-    domains: ['Vocals', 'Guitar/Bass', 'Drums', 'Audio Tech'],
-    lead: 'Tanmay Das (Band Lead)',
-    icon: '🎸',
-  },
-]
-
-const categories = ['All', 'Creative', 'Cultural', 'Technical', 'Literary', 'Social Impact']
-
-export default function CommitteesPage({ onNavigate, onToast }) {
-  const reduceMotion = useReducedMotion()
-  const [activeCategory, setActiveCategory] = useState('All')
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const filtered = allCommitteesData.filter((item) => {
-    const matchesCat = activeCategory === 'All' || item.category === activeCategory
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.domains.some((d) => d.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchesCat && matchesSearch
-  })
-
+function DashboardSectionHeading({ eyebrow, title, count, action, onAction }) {
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] pt-28 pb-20 px-6">
-      <div className="mx-auto max-w-[1200px]">
-        {/* Header Strip */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-[#e4e6da] pb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#dfe1d3] bg-[#f5f6ef] px-3.5 py-1 text-xs font-semibold text-[#35392d]">
-              <Building2 size={13} className="text-[#839b3d]" />
-              <span>Campus Directory</span>
-            </div>
-            <h1 className="mt-3 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#0d0f08]">
-              Campus Committees & Clubs
-            </h1>
-            <p className="mt-2 text-base text-[#5e6355] max-w-xl">
-              Explore officially verified student committees, track open recruitments, and submit your application in one place.
-            </p>
-          </div>
-
-          <button
-            onClick={() => onNavigate('/register?role=committee')}
-            className="lime-button glow shrink-0 flex items-center gap-2 rounded-full px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#0d0f08]"
-          >
-            <Plus size={15} />
-            <span>Register Committee</span>
-          </button>
-        </div>
-
-        {/* Filter & Search Bar */}
-        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Category Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all shrink-0 ${
-                  activeCategory === cat
-                    ? 'bg-[#0d0f08] text-white shadow-sm'
-                    : 'bg-white border border-[#e4e6da] text-[#5e6355] hover:text-[#0d0f08] hover:border-[#0d0f08]/30'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5e6355]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by club or domain..."
-              className="w-full rounded-full border border-[#e4e6da] bg-white py-2 pl-9 pr-4 text-xs font-medium text-[#0d0f08] placeholder:text-[#5e6355]/60 outline-none focus:border-[#0d0f08] focus:ring-1 focus:ring-[#0d0f08]"
-            />
-          </div>
-        </div>
-
-        {/* Committees Grid */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((club) => (
-            <motion.div
-              key={club.id}
-              initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="group flex flex-col justify-between rounded-[24px] border border-[#e4e6da] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_-12px_rgba(0,0,0,0.08)]"
-            >
-              <div>
-                {/* Top Badge Row */}
-                <div className="flex items-center justify-between">
-                  <span className="grid size-12 place-items-center rounded-2xl bg-[#f5f6ef] text-2xl border border-[#e4e6da]">
-                    {club.icon}
-                  </span>
-                  {club.status === 'open' ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#d4ff1f]/20 border border-[#d4ff1f] px-2.5 py-0.5 text-[10px] font-bold text-[#414d1e]">
-                      <span className="size-1.5 rounded-full bg-[#839b3d]" />
-                      Recruitments Open
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-[#f5f6ef] border border-[#e4e6da] px-2.5 py-0.5 text-[10px] font-medium text-[#5e6355]">
-                      Recruitments Closed
-                    </span>
-                  )}
-                </div>
-
-                {/* Name & Tagline */}
-                <h3 className="mt-4 font-display text-xl font-semibold text-[#0d0f08] group-hover:text-[#839b3d] transition-colors">
-                  {club.name}
-                </h3>
-                <p className="mt-1.5 text-xs text-[#5e6355] leading-relaxed">
-                  {club.tagline}
-                </p>
-
-                {/* Domains Tags */}
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {club.domains.map((dom) => (
-                    <span
-                      key={dom}
-                      className="rounded-md bg-[#f6f7f2] border border-[#e4e6da]/70 px-2 py-0.5 text-[10.5px] font-medium text-[#424638]"
-                    >
-                      {dom}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bottom Meta & Action */}
-              <div className="mt-6 border-t border-[#f0f1ea] pt-4">
-                <div className="flex items-center justify-between text-xs text-[#5e6355]">
-                  <span className="flex items-center gap-1">
-                    <Users size={13} />
-                    <strong>{club.members}</strong> active members
-                  </span>
-                  <span>{club.college}</span>
-                </div>
-
-                <div className="mt-4 flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      if (club.status === 'open') {
-                        onNavigate('/apply')
-                      } else {
-                        onToast?.(`Recruitments for ${club.name} are currently closed.`)
-                      }
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
-                      club.status === 'open'
-                        ? 'bg-[#0d0f08] text-white hover:bg-[#839b3d]'
-                        : 'bg-[#f5f6ef] text-[#5e6355] cursor-not-allowed'
-                    }`}
-                  >
-                    <span>{club.status === 'open' ? 'Apply Now' : 'Closed'}</span>
-                    {club.status === 'open' && <ArrowRight size={13} />}
-                  </button>
-
-                  <button
-                    onClick={() => onToast?.(`Contacting Lead: ${club.lead}`)}
-                    className="grid size-10 place-items-center rounded-xl border border-[#e4e6da] text-[#0d0f08] hover:bg-[#f5f6ef] transition-colors"
-                    title={`Contact ${club.lead}`}
-                  >
-                    <ArrowUpRight size={15} />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Empty Search State */}
-        {filtered.length === 0 && (
-          <div className="mt-12 text-center py-16 rounded-[24px] border border-dashed border-[#e4e6da] bg-white">
-            <Building2 size={36} className="mx-auto text-[#5e6355]/40" />
-            <h4 className="mt-3 text-base font-semibold text-[#0d0f08]">No committees found</h4>
-            <p className="mt-1 text-xs text-[#5e6355]">Try adjusting your search query or category filter.</p>
-          </div>
-        )}
+    <div className="mb-4 flex flex-col gap-3 border-b border-[#ded8cf] pb-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        {eyebrow && <p className="text-xs font-medium text-[#77736d]">{eyebrow}</p>}
+        <h2 className="mt-1 font-display text-2xl leading-tight text-[#171614] sm:text-3xl">
+          {title}
+          {typeof count === 'number' && (
+            <span className="ml-2 font-sans text-sm font-medium text-[#8a857e]">
+              {count}
+            </span>
+          )}
+        </h2>
       </div>
+      {action && (
+        <button
+          type="button"
+          onClick={onAction}
+          className="inline-flex min-h-9 items-center gap-2 self-start text-xs font-semibold text-[#65615b] transition hover:text-[#ef6b3b] sm:self-auto"
+        >
+          {action}
+          <ArrowRight size={14} />
+        </button>
+      )}
     </div>
   )
 }
 
+export default function CommitteesPage({ currentUser, onNavigate, onToast }) {
+  const [activeTab, setActiveTab] = useState('all') // 'all' | 'created' | 'joined'
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Live state strictly from backend
+  const [ownedCommittees, setOwnedCommittees] = useState([])
+  const [memberCommittees, setMemberCommittees] = useState([])
+  const [pendingCommittees, setPendingCommittees] = useState([])
+
+  const fetchCommittees = () => {
+    setLoading(true)
+    setError(null)
+
+    getCommitteeList(true)
+      .then((res) => {
+        if (!res) return
+        const owned = Array.isArray(res.owned) ? res.owned : []
+        const memberOf = Array.isArray(res.member_of) ? res.member_of : []
+        const pending = Array.isArray(res.pending) ? res.pending : []
+
+        const mapBackend = (item, defaultRole = 'Member', defaultStatus = 'Active') => {
+          const rawUsername = item.committee_username || item.username || ''
+          const slug = String(rawUsername).toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'artikon'
+          return {
+            id: item.id || `comm_${slug}`,
+            slug,
+            name: item.committee_name || item.name || slug.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+            username: rawUsername || slug,
+            description: item.committee_description || item.description || '',
+            email: item.committee_mail || item.email || '',
+            roleTitle: defaultRole,
+            status: defaultStatus,
+          }
+        }
+
+        setOwnedCommittees(owned.map((o) => mapBackend(o, 'President & Founder', 'Active')))
+        setMemberCommittees(memberOf.map((m) => mapBackend(m, 'Active Member', 'Active')))
+        setPendingCommittees(pending.map((p) => mapBackend(p, 'Applicant', 'Pending')))
+      })
+      .catch((err) => {
+        setError(err.message || 'Unable to load committees from backend.')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    fetchCommittees()
+  }, [])
+
+  // Filter lists based on search
+  const filterList = (list) => {
+    if (!searchQuery.trim()) return list
+    const q = searchQuery.toLowerCase().trim()
+    return list.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.username.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q)
+    )
+  }
+
+  const filteredOwned = useMemo(() => filterList(ownedCommittees), [ownedCommittees, searchQuery])
+  const filteredMember = useMemo(() => filterList(memberCommittees), [memberCommittees, searchQuery])
+  const filteredPending = useMemo(() => filterList(pendingCommittees), [pendingCommittees, searchQuery])
+
+  const totalCount = ownedCommittees.length + memberCommittees.length + pendingCommittees.length
+
+  const handleCreated = (newComm) => {
+    setIsCreateWizardOpen(false)
+    fetchCommittees()
+    onToast?.(`Committee "${newComm.name}" created successfully!`)
+    const slug = (newComm.username || newComm.name || '').toLowerCase().replace(/[^a-z0-9_-]/g, '')
+    if (slug) {
+      onNavigate?.(`/committees/${slug}/manage`)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#fafaf5] px-4 pb-24 pt-6 text-[#171614] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1200px] space-y-6">
+        {/* ── Top Header Strip ── */}
+        <section className="overflow-hidden border border-[#ded8cf] bg-[#fcfbf8] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="size-1.5 rounded-full bg-[#ef6b3b]" />
+                <span className="text-xs font-medium text-[#65615b]">Campus Network</span>
+              </div>
+              <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-[#171614] sm:text-4xl">
+                Committees & Guilds
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-[#65615b]">
+                Manage the committees you lead, view your active team memberships, and access workspaces.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCreateWizardOpen(true)}
+                className="inline-flex min-h-10 items-center gap-2 bg-[#171614] px-4 text-xs font-semibold text-white transition hover:bg-[#38332f]"
+              >
+                <Plus size={15} />
+                <span>Create Committee</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Strip */}
+          <div className="mt-6 flex flex-col gap-3 border-t border-[#ded8cf] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1">
+              {[
+                { id: 'all', label: 'All', count: totalCount },
+                { id: 'created', label: 'Created by You', count: ownedCommittees.length },
+                { id: 'joined', label: 'Joined', count: memberCommittees.length + pendingCommittees.length },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition ${
+                    activeTab === tab.id
+                      ? 'bg-[#171614] text-white'
+                      : 'text-[#65615b] hover:bg-[#eeeae3] hover:text-[#171614]'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 text-[10px] font-mono ${
+                      activeTab === tab.id
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[#eeeae3] text-[#65615b]'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8a857e]"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search your committees..."
+                className="w-full border border-[#ded8cf] bg-[#fcfbf8] pl-8 pr-3 py-1.5 text-xs text-[#171614] placeholder-[#8a857e] focus:border-[#ef6b3b] focus:outline-none"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Loading Skeleton ── */}
+        {loading && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-44 border border-[#ded8cf] bg-[#fcfbf8] p-5 animate-pulse"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Error Banner ── */}
+        {error && !loading && (
+          <div className="border border-[#ded8cf] bg-[#fcfbf8] p-6 text-center">
+            <p className="text-xs text-[#a9431e]">{error}</p>
+            <button
+              type="button"
+              onClick={fetchCommittees}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#171614] underline"
+            >
+              <RotateCw size={13} />
+              <span>Retry</span>
+            </button>
+          </div>
+        )}
+
+        {/* ── Main Content Lists (NO fake data) ── */}
+        {!loading && !error && (
+          <div className="space-y-10">
+            {/* 1. CREATED BY YOU SECTION */}
+            {(activeTab === 'all' || activeTab === 'created') && (
+              <section>
+                <DashboardSectionHeading
+                  eyebrow="Founder & Leadership"
+                  title="Committees you created"
+                  count={ownedCommittees.length}
+                  action="+ New Committee"
+                  onAction={() => setIsCreateWizardOpen(true)}
+                />
+
+                {filteredOwned.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredOwned.map((comm) => (
+                      <div
+                        key={comm.id}
+                        className="group relative flex flex-col justify-between border border-[#ded8cf] bg-[#fcfbf8] p-5 transition-colors hover:bg-[#f5f1eb]"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <span className="grid size-12 shrink-0 place-items-center border border-[#ded8cf] bg-[#eeeae3] text-[#65615b]">
+                                <Palette size={20} strokeWidth={1.5} />
+                              </span>
+                              <div className="min-w-0">
+                                <h3 className="truncate font-display text-lg font-semibold text-[#171614] transition-colors group-hover:text-[#a9431e] sm:text-xl">
+                                  {comm.name}
+                                </h3>
+                                <p className="truncate font-mono text-xs font-semibold text-[#5e6355]">
+                                  @{comm.username}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-[#47714a]">
+                              <CheckCircle2 size={11} className="text-[#839b3d]" />
+                              <span>Active</span>
+                            </span>
+                          </div>
+
+                          {comm.description && (
+                            <p className="mt-3 text-xs leading-relaxed text-[#65615b] line-clamp-2">
+                              {comm.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions Bottom Bar */}
+                        <div className="mt-5 flex items-center justify-between border-t border-[#ded8cf] pt-3 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => onNavigate?.(`/committees/${comm.slug}`)}
+                            className="font-semibold text-[#65615b] hover:text-[#171614] inline-flex items-center gap-1"
+                          >
+                            <span>Community Hub</span>
+                            <ArrowUpRight size={13} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onNavigate?.(`/committees/${comm.slug}/manage`)}
+                            className="inline-flex items-center gap-1 bg-[#171614] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#38332f]"
+                          >
+                            <Settings size={12} />
+                            <span>Workspace</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-[#ded8cf] bg-[#fcfbf8] px-5 py-10 text-center sm:px-8">
+                    <Building2 size={28} className="mx-auto text-[#ef6b3b]" />
+                    <p className="mt-3 font-display text-xl text-[#171614]">
+                      No created committees yet
+                    </p>
+                    <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[#65615b]">
+                      Register your student society, festival committee, or creative guild to manage members, roles, tasks, and meetings.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateWizardOpen(true)}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 bg-[#171614] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#38332f]"
+                    >
+                      Create committee <ArrowDownRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* 2. JOINED COMMITTEES & APPLICATIONS */}
+            {(activeTab === 'all' || activeTab === 'joined') && (
+              <section>
+                <DashboardSectionHeading
+                  eyebrow="Memberships & Applications"
+                  title="Committees you joined"
+                  count={memberCommittees.length + pendingCommittees.length}
+                />
+
+                {[...filteredMember, ...filteredPending].length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[...filteredMember, ...filteredPending].map((comm) => (
+                      <div
+                        key={comm.id}
+                        onClick={() => onNavigate?.(`/committees/${comm.slug}`)}
+                        className="group relative flex cursor-pointer flex-col justify-between border border-[#ded8cf] bg-[#fcfbf8] p-5 transition-colors hover:bg-[#f5f1eb]"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <span className="grid size-12 shrink-0 place-items-center border border-[#ded8cf] bg-[#eeeae3] text-[#65615b]">
+                                <Palette size={20} strokeWidth={1.5} />
+                              </span>
+                              <div className="min-w-0">
+                                <h3 className="truncate font-display text-lg font-semibold text-[#171614] transition-colors group-hover:text-[#a9431e] sm:text-xl">
+                                  {comm.name}
+                                </h3>
+                                <p className="truncate font-mono text-xs font-semibold text-[#5e6355]">
+                                  @{comm.username}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span
+                              className={`inline-flex shrink-0 items-center gap-1 text-xs font-medium ${
+                                comm.status === 'Active'
+                                  ? 'text-[#47714a]'
+                                  : 'text-[#65615b]'
+                              }`}
+                            >
+                              {comm.status === 'Active' ? (
+                                <CheckCircle2 size={11} className="text-[#839b3d]" />
+                              ) : (
+                                <Clock size={11} />
+                              )}
+                              <span>{comm.status}</span>
+                            </span>
+                          </div>
+
+                          {comm.description && (
+                            <p className="mt-3 text-xs leading-relaxed text-[#65615b] line-clamp-2">
+                              {comm.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Role & Arrow */}
+                        <div className="mt-5 flex items-center justify-between border-t border-[#ded8cf] pt-3 text-xs">
+                          <span className="font-semibold text-[#0d0f08]">
+                            {comm.roleTitle}
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-semibold text-[#5e6355] transition-colors group-hover:text-[#171614]">
+                            <span className="text-[11px]">View Committee</span>
+                            <ArrowUpRight
+                              size={14}
+                              className="text-[#65615b] transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-[#ded8cf] bg-[#fcfbf8] px-5 py-10 text-center sm:px-8">
+                    <Users size={28} className="mx-auto text-[#ef6b3b]" />
+                    <p className="mt-3 font-display text-xl text-[#171614]">
+                      No joined committees yet
+                    </p>
+                    <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[#65615b]">
+                      You haven&apos;t joined any campus committees yet. Discover committees on campus and submit an application to participate.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('/events')}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 bg-[#171614] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#38332f]"
+                    >
+                      Explore live events <ArrowDownRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Create Committee Wizard Modal ── */}
+      <CreateCommitteeWizard
+        isOpen={isCreateWizardOpen}
+        onClose={() => setIsCreateWizardOpen(false)}
+        onCreated={handleCreated}
+        onToast={onToast}
+        userCommittees={ownedCommittees}
+      />
+    </div>
+  )
+}

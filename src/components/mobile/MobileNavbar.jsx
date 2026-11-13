@@ -1,4 +1,5 @@
 import { Bell, Menu, X } from 'lucide-react'
+import MobileMenu from '../navbar/MobileMenu'
 
 export default function MobileNavbar({
   currentUser,
@@ -6,6 +7,7 @@ export default function MobileNavbar({
   onOpenNotifications,
   onOpenProfile,
   onNavigate,
+  onLinkClick,
   menuOpen,
   setMenuOpen,
 }) {
@@ -23,7 +25,7 @@ export default function MobileNavbar({
     'U'
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-[#e4e6da] bg-white/95 px-4 backdrop-blur-md min-[900px]:hidden">
+    <header className="sticky top-0 z-50 flex h-14 w-full items-center justify-between border-b border-[#e4e6da] bg-[#fafaf5]/95 px-3 backdrop-blur-md min-[900px]:hidden sm:px-4">
       {/* Left: Logo */}
       <a
         href="/"
@@ -62,10 +64,19 @@ export default function MobileNavbar({
             <button
               type="button"
               onClick={onOpenProfile}
-              className="grid size-9 place-items-center rounded-full border border-white bg-[#0d0f08] font-mono text-[11px] font-bold text-white shadow-sm"
-              aria-label="User Profile"
+              className="grid size-9 shrink-0 place-items-center rounded-full border border-white bg-[#0d0f08] font-mono text-[11px] font-bold text-white shadow-sm"
+              aria-label="Open profile menu"
             >
               {initials}
+            </button>
+            <button
+              type="button"
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="grid size-9 shrink-0 place-items-center rounded-full border border-[#e4e6da] text-[#0d0f08]"
+            >
+              {menuOpen ? <X size={17} /> : <Menu size={17} />}
             </button>
           </>
         ) : (
@@ -83,6 +94,7 @@ export default function MobileNavbar({
             <button
               type="button"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
               className="grid size-9 place-items-center rounded-full border border-[#e4e6da] text-[#0d0f08]"
             >
@@ -91,6 +103,7 @@ export default function MobileNavbar({
           </>
         )}
       </div>
+      {menuOpen && <MobileMenu currentUser={currentUser} onLinkClick={onLinkClick} />}
     </header>
   )
 }

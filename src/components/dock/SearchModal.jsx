@@ -1,29 +1,69 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Building2, Search, Users, X } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { siteConfig } from '../../config/siteConfig'
-
-const directoryData = [
-  { id: 'msit', name: siteConfig.college, type: 'College Campus', detail: 'Kolkata, West Bengal', tag: 'Campus' },
-  { id: 'design', name: 'Design Committee', type: 'Creative Committee', detail: 'MSIT Campus', tag: 'Design' },
-  { id: 'cine', name: 'Cine Club MSIT', type: 'Film & Media Committee', detail: 'MSIT Campus', tag: 'Film' },
-  { id: 'drama', name: 'Rangrekha Drama Club', type: 'Performing Arts', detail: 'MSIT Campus', tag: 'Drama' },
-  { id: 'tech', name: 'Tech & Code Society', type: 'Engineering & Web', detail: 'MSIT Campus', tag: 'Tech' },
-  { id: 'literary', name: 'Oratoria Debating Society', type: 'Literary & PI', detail: 'MSIT Campus', tag: 'Literary' },
-]
+import { getCommitteeList } from '../../api/committee'
 
 export default function SearchModal({ onClose, onSelect }) {
   const [query, setQuery] = useState('')
+  const [committees, setCommittees] = useState([])
+  const [loading, setLoading] = useState(true)
   const inputRef = useRef(null)
   const reduceMotion = useReducedMotion()
 
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+
+    getCommitteeList()
+      .then((res) => {
+        if (cancelled || !res) return
+        const owned = Array.isArray(res.owned) ? res.owned : []
+        const memberOf = Array.isArray(res.member_of) ? res.member_of : []
+
+        const mapped = [
+          ...owned
+            .filter((c) => Boolean(c && (c.committee_username || c.committee_name || c.name)))
+            .map((c) => ({
+              id: c.id,
+              name: c.committee_name || c.name || (c.committee_username ? c.committee_username.replace(/_/g, ' ') : 'Campus Committee'),
+              type: c.committee_category || 'Creative Committee',
+              detail: c.college || 'Campus Council',
+              tag: 'Council Lead',
+            })),
+          ...memberOf
+            .filter((m) => Boolean(m && (m.committee_username || m.committee_name || m.committee?.committee_username || m.committee?.committee_name)))
+            .map((m) => {
+              const comm = m.committee || m
+              return {
+                id: comm.id || m.id,
+                name: comm.committee_name || comm.name || (comm.committee_username ? comm.committee_username.replace(/_/g, ' ') : 'Campus Club'),
+                type: comm.committee_category || 'Campus Club',
+                detail: comm.college || 'Member',
+                tag: 'Member',
+              }
+            }),
+        ]
+        setCommittees(mapped)
+      })
+      .catch(() => {
+        setCommittees([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return directoryData
-    return directoryData.filter((item) =>
+    if (!q) return committees
+    return committees.filter((item) =>
       `${item.name} ${item.type} ${item.detail} ${item.tag}`.toLowerCase().includes(q)
     )
-  }, [query])
+  }, [query, committees])
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -61,7 +101,7 @@ export default function SearchModal({ onClose, onSelect }) {
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search a committee or college..."
+              placeholder="Search a committee or campus..."
               className="min-h-10 flex-1 bg-transparent text-sm font-medium text-[#0d0f08] outline-none placeholder:text-[#888d80]"
             />
             <button
@@ -76,10 +116,15 @@ export default function SearchModal({ onClose, onSelect }) {
           {/* Directory Listings */}
           <div className="max-h-[55vh] overflow-y-auto p-3 sm:p-4">
             <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#777c70]">
-              Committees & Colleges
+              Campus Committees
             </p>
 
-            {results.length > 0 ? (
+            {loading ? (
+              <div className="space-y-2 p-3">
+                <div className="h-10 animate-pulse rounded-xl bg-[#f6f7f2]" />
+                <div className="h-10 animate-pulse rounded-xl bg-[#f6f7f2]" />
+              </div>
+            ) : results.length > 0 ? (
               <div className="space-y-1">
                 {results.map((item) => (
                   <button
@@ -110,8 +155,8 @@ export default function SearchModal({ onClose, onSelect }) {
               </div>
             ) : (
               <div className="rounded-2xl bg-[#f6f7f2] px-4 py-8 text-center text-sm text-[#5e6355]">
-                <p className="font-semibold text-[#0d0f08]">No matching committee found</p>
-                <p className="mt-1 text-xs">Try searching for "Design", "Cine", or "MSIT".</p>
+                <p className="font-semibold text-[#0d0f08]">No committees found</p>
+                <p className="mt-1 text-xs">Create a new committee or join one to see it listed here.</p>
               </div>
             )}
           </div>
@@ -120,4 +165,3 @@ export default function SearchModal({ onClose, onSelect }) {
     </AnimatePresence>
   )
 }
-

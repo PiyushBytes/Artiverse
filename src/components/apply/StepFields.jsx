@@ -45,7 +45,7 @@ export function StepPersonal({ form, onChange, errors }) {
           type="email"
           value={form.email}
           onChange={onChange}
-          placeholder="you@msit.edu"
+          placeholder="you@university.edu"
           className={`${fieldClasses} ${border('email')}`}
         />
       </FieldWrapper>

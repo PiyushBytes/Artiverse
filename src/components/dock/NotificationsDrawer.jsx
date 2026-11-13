@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Bell, Check, X } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 
 export default function NotificationsDrawer({ currentUser, onClose }) {
@@ -11,9 +11,13 @@ export default function NotificationsDrawer({ currentUser, onClose }) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  const notifications = currentUser?.notifications || [
-    { id: '1', title: 'Welcome to Artiverse', desc: 'Your creative account is ready', time: 'Just now', unread: true },
-  ]
+  const notifications = Array.isArray(currentUser?.notifications) ? currentUser.notifications : []
+  const formatNotificationTime = (notification) => {
+    const value = notification.created_at || notification.time
+    if (!value) return ''
+    const date = new Date(value)
+    return Number.isNaN(date.valueOf()) ? '' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', ...(String(value).includes('T') ? { timeStyle: 'short' } : {}) }).format(date)
+  }
 
   return (
     <AnimatePresence>
@@ -33,7 +37,7 @@ export default function NotificationsDrawer({ currentUser, onClose }) {
           transition={{ type: 'spring', damping: 28, stiffness: 280 }}
           role="dialog"
           aria-modal="true"
-          className="relative h-full w-full max-w-sm border-l border-[#e4e6da] bg-white p-5 shadow-2xl flex flex-col justify-between"
+          className="relative flex h-full w-full max-w-sm flex-col border-l border-[#e4e6da] bg-white p-5"
         >
           <div>
             <div className="flex items-center justify-between border-b border-[#e4e6da] pb-4">
@@ -44,13 +48,15 @@ export default function NotificationsDrawer({ currentUser, onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="grid size-8 place-items-center rounded-full text-[#5e6355] hover:bg-[#f6f7f2]"
+                aria-label="Close notifications"
+                className="grid size-8 place-items-center rounded-full text-[#5e6355] hover:bg-[#f6f7f2] focus-visible:outline-2 focus-visible:outline-[#0d0f08]"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="mt-4 space-y-2.5 overflow-y-auto max-h-[75vh]">
+            <div className="mt-4 max-h-[75vh] space-y-2.5 overflow-y-auto">
+              {notifications.length === 0 && <p className="rounded-[10px] border border-dashed border-[#e4e6da] p-4 text-xs leading-5 text-[#5e6355]">Your notifications will appear here.</p>}
               {notifications.map((n) => (
                 <div
                   key={n.id}
@@ -62,24 +68,14 @@ export default function NotificationsDrawer({ currentUser, onClose }) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-xs font-bold text-[#0d0f08]">{n.title}</p>
-                    <span className="text-[10px] text-[#777c70]">{n.time}</span>
+                    <span className="text-[10px] text-[#777c70]">{formatNotificationTime(n)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-[#5e6355] leading-relaxed">{n.desc}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#5e6355]">{n.desc || n.body}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="border-t border-[#e4e6da] pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0d0f08] py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90"
-            >
-              <Check size={14} />
-              <span>Mark all as read</span>
-            </button>
-          </div>
         </motion.aside>
       </motion.div>
     </AnimatePresence>

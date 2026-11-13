@@ -1,44 +1,49 @@
-import { startTransition, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useReducedMotion } from 'motion/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
   Navbar,
   Hero,
-  EventMarquee,
   Products,
-  HowItWorks,
   Stats,
   FAQSection,
-  CTA,
   Footer,
   ApplyPage,
   AuthPage,
+  AuthModal,
   Events,
   Dashboard,
-  SideDock,
   MobileNavigation,
   Toast,
 } from './components'
 import {
   AboutPage,
+  CommitteeProfilePage,
+  CommitteePublicPage,
+  CommitteeManagePage,
   CommitteesPage,
   ContactPage,
-  HowItWorksPage,
   ProfilePage,
   RegistrationsPage,
   SearchPage,
   SettingsPage,
+  LeaderboardPage,
 } from './pages'
 import NotificationsDrawer from './components/dock/NotificationsDrawer'
 import SearchModal from './components/dock/SearchModal'
 import ContactModal from './components/dock/ContactModal'
+import DashboardShell from './components/dashboard/overview/DashboardShell'
 import { clearAuthSession, logoutFromServer } from './api/auth'
 
-function getRoute() {
-  const path = window.location.pathname
-  if (path === '/events') return 'events'
-  if (path === '/apply' || path === '/join' || path === '/students') return 'apply'
+function getRoute(path) {
+  if (path.startsWith('/committees/') && path.endsWith('/manage')) return 'committee-manage'
+  if (path.startsWith('/committees/') && path !== '/committees') return 'committee-public'
   if (path === '/committees') return 'committees'
-  if (path === '/how-it-works') return 'how-it-works'
+  if (path === '/events') return 'events'
+  if (path === '/leaderboard') return 'leaderboard'
+  if (path === '/apply' || path === '/join' || path === '/students') return 'apply'
   if (path === '/about') return 'about'
   if (path === '/registrations' || path === '/my-registrations') return 'registrations'
   if (path === '/profile') return 'profile'
@@ -51,9 +56,30 @@ function getRoute() {
   return 'home'
 }
 
+function workspaceTitle(route, search) {
+  if (route === 'registrations') {
+    const tab = new URLSearchParams(search).get('tab')
+    return tab === 'passes' ? 'My passes' : tab === 'applications' ? 'Applications' : 'My registrations'
+  }
+  return ({
+    dashboard: 'Overview',
+    profile: 'My Profile',
+    settings: 'Settings',
+    events: 'Live Events',
+    leaderboard: 'Leaderboard',
+    committees: 'Committees',
+    'committee-manage': 'Committee workspace',
+    'committee-public': 'Committee',
+    search: 'Search',
+    contact: 'Contact',
+  })[route] || 'Overview'
+}
+
 export default function App() {
+  const location = useLocation()
+  const routerNavigate = useNavigate()
   const reduceMotion = useReducedMotion()
-  const [route, setRoute] = useState(getRoute)
+  const route = getRoute(location.pathname)
   const [toast, setToast] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -72,13 +98,13 @@ export default function App() {
     if (reduceMotion) return undefined
     let cancelled = false
     let cleanup = () => {}
-    Promise.all([import('lenis'), import('gsap'), import('gsap/ScrollTrigger')])
-      .then(([lenisModule, gsapModule, triggerModule]) => {
+
+    gsap.registerPlugin(ScrollTrigger)
+
+    import('lenis')
+      .then((lenisModule) => {
         if (cancelled) return
         const Lenis = lenisModule.default
-        const gsap = gsapModule.gsap || gsapModule.default
-        const ScrollTrigger = triggerModule.ScrollTrigger
-        gsap.registerPlugin(ScrollTrigger)
         const lenis = new Lenis({ autoRaf: false, smoothWheel: true, anchors: true })
         const raf = (time) => lenis.raf(time * 1000)
         lenis.on('scroll', ScrollTrigger.update)
@@ -92,6 +118,7 @@ export default function App() {
         }
       })
       .catch(() => {})
+
     return () => {
       cancelled = true
       cleanup()
@@ -107,67 +134,114 @@ export default function App() {
   }
 
   useEffect(() => {
-    const sync = () => {
-      startTransition(() => {
-        setRoute(getRoute())
-      })
-      syncUser()
-    }
-    window.addEventListener('popstate', sync)
     window.addEventListener('storage', syncUser)
-    return () => {
-      window.removeEventListener('popstate', sync)
-      window.removeEventListener('storage', syncUser)
-    }
+    return () => window.removeEventListener('storage', syncUser)
   }, [])
 
-  const navigate = (path) => {
-    const cleanPath = path.split('?')[0]
-    if (window.location.pathname !== cleanPath) {
-      window.history.pushState({}, '', path)
-    }
-    startTransition(() => {
-      setRoute(getRoute())
-    })
+  const navigate = useCallback((path, options) => {
+    setToast('')
+    syncUser()
     try {
-      window.scrollTo(0, 0)
+      ScrollTrigger.getAll().forEach((t) => t.kill())
     } catch {
-      // safe fallback
+      // ignore
+    }
+    routerNavigate(path, options)
+    if (!String(path).includes('#')) window.scrollTo(0, 0)
+  }, [routerNavigate])
+
+  useEffect(() => { syncUser() }, [location.key])
+
+  useEffect(() => {
+    const id = location.hash.slice(1)
+    if (!id) return
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' }))
+  }, [location.pathname, location.hash, reduceMotion])
+
+  const hasSession = Boolean(currentUser && localStorage.getItem('artiverse_auth_tokens'))
+  
+  // Auth Modal State (replaces separate auth page with in-place modal)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState('login')
+  const isAuthRoute = route === 'login' || route === 'register'
+
+  useEffect(() => {
+    if (isAuthRoute) {
+      setAuthModalMode(route === 'register' ? 'register' : 'login')
+      setAuthModalOpen(true)
+    }
+  }, [isAuthRoute, route])
+
+  const openAuthModal = (mode = 'login') => {
+    setAuthModalMode(mode)
+    setAuthModalOpen(true)
+  }
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false)
+    if (isAuthRoute) {
+      routerNavigate('/', { replace: true })
     }
   }
 
+  useEffect(() => {
+    if (route === 'dashboard' && !hasSession) {
+      openAuthModal('login')
+      routerNavigate('/', { replace: true })
+    }
+  }, [route, hasSession, routerNavigate])
+
   const renderCurrentRoute = () => {
     switch (route) {
-      case 'login':
-      case 'register':
-        return (
-          <AuthPage
-            mode={route}
-            onNavigateLogin={() => navigate('/login')}
-            onNavigateRegister={() => navigate('/register')}
-            onBack={() => navigate('/')}
-            onLoginSuccess={(user) => {
-              setCurrentUser(user)
-              navigate('/dashboard')
-            }}
-          />
-        )
       case 'apply':
         return <ApplyPage onBack={() => navigate('/')} />
       case 'dashboard':
+        if (!hasSession) return null
         return (
           <Dashboard
             currentUser={currentUser}
-            onBack={() => navigate('/')}
+            onNavigate={navigate}
             onToast={setToast}
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenNotifications={() => setNotifOpen(true)}
+            onSignOut={signOut}
           />
         )
       case 'events':
         return <Events onJoin={() => navigate('/apply')} />
       case 'committees':
-        return <CommitteesPage onNavigate={navigate} onToast={setToast} />
-      case 'how-it-works':
-        return <HowItWorksPage onNavigate={navigate} />
+        return (
+          <CommitteesPage
+            currentUser={currentUser}
+            onNavigate={navigate}
+            onToast={setToast}
+          />
+        )
+      case 'leaderboard':
+        return <LeaderboardPage onNavigate={navigate} />
+      case 'committee-manage': {
+        const segments = window.location.pathname.replace(/^\/committees\//, '').split('/')
+        const slug = segments[0] || 'artikon'
+        return (
+          <CommitteeManagePage
+            slug={slug}
+            currentUser={currentUser}
+            onNavigate={navigate}
+            onToast={setToast}
+          />
+        )
+      }
+      case 'committee-public': {
+        const slug = window.location.pathname.replace(/^\/committees\//, '').split('/')[0] || 'artikon'
+        return (
+          <CommitteePublicPage
+            slug={slug}
+            currentUser={currentUser}
+            onNavigate={navigate}
+            onToast={setToast}
+          />
+        )
+      }
       case 'about':
         return <AboutPage onNavigate={navigate} />
       case 'registrations':
@@ -175,7 +249,7 @@ export default function App() {
           <RegistrationsPage
             currentUser={currentUser}
             onNavigate={navigate}
-            onToast={setToast}
+            tab={new URLSearchParams(location.search).get('tab')}
           />
         )
       case 'profile':
@@ -203,12 +277,9 @@ export default function App() {
         return (
           <div className="w-full">
             <Hero onApply={() => navigate('/apply')} />
-            <EventMarquee />
             <Products />
-            <HowItWorks />
             <Stats />
             <FAQSection />
-            <CTA onApply={() => navigate('/apply')} />
           </div>
         )
     }
@@ -244,10 +315,6 @@ export default function App() {
       navigate('/committees')
       return
     }
-    if (href === '#how-it-works' || href === '/how-it-works') {
-      navigate('/how-it-works')
-      return
-    }
     if (href === '#about' || href === '/about') {
       navigate('/about')
       return
@@ -262,56 +329,70 @@ export default function App() {
     navigate(href)
   }
 
-  const isAuth = route === 'login' || route === 'register'
+  const isDashboard = route === 'dashboard'
+  const workspaceRoutes = ['dashboard', 'committees', 'profile', 'settings', 'events', 'registrations', 'leaderboard', 'search', 'contact']
+  const isWorkspace = Boolean(hasSession && workspaceRoutes.includes(route))
+  const isCommitteeWorkspace = route === 'committee-manage'
 
   return (
-    <div id="top" className="min-h-screen bg-white text-[#0d0f08]">
-      {/* ── DESKTOP NAVBAR (min-[900px]:block hidden) ── */}
-      {!isAuth && (
-        <div className="hidden min-[900px]:block">
-          <Navbar
-            currentUser={currentUser}
-            onSignOut={signOut}
-            onLogin={() => navigate('/login')}
-            onOpenNotifications={() => setNotifOpen(true)}
-            onOpenProfile={() => navigate('/profile')}
-            onOpenSettings={() => navigate('/settings')}
-            onNavigate={handleNavTarget}
-          />
-        </div>
-      )}
+    <div id="top" className={`app-responsive-frame min-h-screen bg-[#fafaf5] text-[#0d0f08] ${isCommitteeWorkspace ? 'app-no-mobile-bar' : ''}`}>
+      {/* ── DESKTOP NAVBAR (Landing page navbar properly aligned with the page) ── */}
+      {!isCommitteeWorkspace && <div className={`hidden min-[900px]:block transition-[padding] duration-200 ${isWorkspace ? 'min-[900px]:pl-[68px]' : ''}`}>
+        <Navbar
+          currentUser={currentUser}
+          onSignOut={signOut}
+          onLogin={() => openAuthModal('login')}
+          onOpenNotifications={() => setNotifOpen(true)}
+          onNavigate={handleNavTarget}
+          onDashboardPage={route === 'dashboard'}
+        />
+      </div>}
 
       {/* ── MOBILE NAVBAR & BOTTOM BAR (Dedicated in src/components/mobile) ── */}
-      {!isAuth && (
-        <MobileNavigation
-          currentUser={currentUser}
-          onLogin={() => navigate('/login')}
-          onSignOut={signOut}
-          onNavigate={navigate}
-          onOpenSearch={() => setSearchOpen(true)}
-          onOpenNotifications={() => setNotifOpen(true)}
-          onOpenContact={() => setContactOpen(true)}
-        />
-      )}
+      {!isCommitteeWorkspace && <MobileNavigation
+        currentUser={currentUser}
+        onLogin={() => openAuthModal('login')}
+        onSignOut={signOut}
+        onNavigate={navigate}
+        onOpenSearch={() => setSearchOpen(true)}
+        onOpenNotifications={() => setNotifOpen(true)}
+        onOpenContact={() => setContactOpen(true)}
+        onDashboardPage={route === 'dashboard'}
+      />}
 
       {/* ── MAIN CONTENT (Keyed by route to cleanly isolate DOM subtrees) ── */}
-      <main className={!isAuth ? 'pb-[calc(84px+env(safe-area-inset-bottom))] min-[900px]:pb-0' : ''}>
-        <div key={route} className="w-full">
-          {renderCurrentRoute()}
-        </div>
-      </main>
-
-      {/* ── DESKTOP SIDE DOCK (Strictly 4 buttons, min-[900px]:flex hidden) ── */}
-      {!isAuth && (
-        <SideDock
-          currentUser={currentUser}
-          onNavigate={navigate}
-          onToast={setToast}
-        />
-      )}
+      <div className="w-full min-w-0">
+        {isWorkspace ? (
+          <DashboardShell
+            user={currentUser}
+            sectionTitle={workspaceTitle(route, location.search)}
+            onNavigate={navigate}
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenNotifications={() => setNotifOpen(true)}
+            onSignOut={signOut}
+            onToast={setToast}
+          >
+            <div key={route} className="w-full">{renderCurrentRoute()}</div>
+          </DashboardShell>
+        ) : (
+          <div key={route} className="w-full">{renderCurrentRoute()}</div>
+        )}
+      </div>
 
       {/* ── FOOTER ── */}
-      {!isAuth && <Footer />}
+      {!isCommitteeWorkspace && <Footer />}
+
+      {/* ── AUTH MODAL (Popup login and registration) ── */}
+      <AuthModal
+        isOpen={authModalOpen}
+        initialMode={authModalMode}
+        onClose={closeAuthModal}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user)
+          navigate('/')
+          setToast(`Welcome back, ${user.fullName || 'Member'}!`)
+        }}
+      />
 
       {/* ── GLOBAL MODALS ── */}
       {searchOpen && (
@@ -330,8 +411,11 @@ export default function App() {
 
       {contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
 
-      {/* ── TOAST MESSAGES ── */}
-      <Toast message={toast} onClose={() => setToast('')} />
+      {/* ── TOAST MESSAGES (Bottom-Right, Auto-dismiss, Protected against stale signed out messages) ── */}
+      <Toast
+        message={currentUser && toast?.toLowerCase().includes('signed out') ? '' : toast}
+        onClose={() => setToast('')}
+      />
     </div>
   )
 }

@@ -1,11 +1,11 @@
 export { heroContent, heroMockupData } from './heroData'
 
-export const eventNames = ['Cine-Charcha', 'Clashpoint', 'Act It Out', 'Rangrekha', "Kalakriti'26"]
+export const eventNames = ['Campus Conclave', 'Clashpoint', 'Act It Out', 'Annual Cultural Fest', 'Tech Summit']
 
 export const heroNotifications = [
-  { eyebrow: 'EVENT REGISTRATION', message: 'Cine-Charcha · Aanya registered · ₹149', icon: 'ticket', time: 'now' },
-  { eyebrow: 'COMMITTEE JOIN', message: 'Design Committee · 38 members registered in one click', icon: 'people', time: '1m ago' },
-  { eyebrow: 'RECRUITMENT', message: 'You have been shortlisted for your PI', icon: 'spark', time: '2m ago' },
+  { eyebrow: 'EVENT REGISTRATION', message: 'Campus Festival · Participant registered · Pass active', icon: 'ticket', time: 'now' },
+  { eyebrow: 'COMMITTEE JOIN', message: 'Campus Committee · Roster registered in one click', icon: 'people', time: '1m ago' },
+  { eyebrow: 'RECRUITMENT', message: 'You have been shortlisted for your interview', icon: 'spark', time: '2m ago' },
 ]
 
 export const productDetails = {
@@ -31,7 +31,7 @@ export const stepsByProduct = {
 export const impactStats = [
   { value: 240, suffix: '+', label: 'applications this cycle' },
   { value: 20, suffix: '', label: 'events managed' },
-  { value: 2025, suffix: '', label: 'founded at MSIT' },
+  { value: 2025, suffix: '', label: 'founded on campus' },
 ]
 
 export const landingFaqs = [

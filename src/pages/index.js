@@ -1,9 +1,11 @@
+export { default as CommitteeProfilePage } from './CommitteeProfilePage'
+export { default as CommitteePublicPage } from './CommitteePublicPage'
+export { default as CommitteeManagePage } from './CommitteeManagePage'
 export { default as CommitteesPage } from './CommitteesPage'
-export { default as HowItWorksPage } from './HowItWorksPage'
 export { default as AboutPage } from './AboutPage'
 export { default as RegistrationsPage } from './RegistrationsPage'
 export { default as ProfilePage } from './ProfilePage'
 export { default as SettingsPage } from './SettingsPage'
 export { default as ContactPage } from './ContactPage'
 export { default as SearchPage } from './SearchPage'
-
+export { default as LeaderboardPage } from './LeaderboardPage'

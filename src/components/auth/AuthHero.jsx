@@ -81,7 +81,7 @@ export default function AuthHero({ mode }) {
       {/* Origin footer note */}
       <div className="mt-6 flex items-center gap-2 text-xs font-medium text-[#5e6355]">
         <CheckCircle2 size={14} className="text-[#839b3d]" />
-        <span>Built at Meghnad Saha Institute of Technology, Kolkata</span>
+        <span>Built for campus committees and university student councils</span>
       </div>
     </div>
   )

@@ -17,7 +17,7 @@ export const heroRolesData = {
         type: 'ticket',
         app: 'Artiverse Pass',
         time: 'Just now',
-        title: 'Cine-Charcha · Pass Confirmed',
+        title: 'Campus Fest · Pass Confirmed',
         desc: 'QR pass active · Gate 2 entry',
         badge: 'ACTIVE',
       },
@@ -26,8 +26,8 @@ export const heroRolesData = {
         type: 'star',
         app: 'Artiverse Recruitment',
         time: '12m ago',
-        title: 'Shortlisted for PI Round',
-        desc: 'Design Committee · Slot: 4:30 PM',
+        title: 'Shortlisted for Council PI',
+        desc: 'Campus Committee · Slot: 4:30 PM',
         badge: 'NEW',
       },
       {
@@ -35,7 +35,7 @@ export const heroRolesData = {
         type: 'calendar',
         app: 'Campus Life',
         time: '1h ago',
-        title: "Kalakriti'26 Passes Live",
+        title: 'Annual Conclave Passes Live',
         desc: 'Early bird access unlocked · ₹149',
         badge: 'EVENT',
       },
@@ -49,8 +49,8 @@ export const heroRolesData = {
         type: 'users',
         app: 'Artiverse Committee',
         time: 'Just now',
-        title: '38 members registered',
-        desc: 'Design Committee · 1-click roster synced',
+        title: 'Committee Roster Synced',
+        desc: 'Campus Committee · 1-click roster updated',
         badge: 'SYNCED',
       },
       {
@@ -59,7 +59,7 @@ export const heroRolesData = {
         app: 'Council Portal',
         time: '24m ago',
         title: 'Budget Sanctioned',
-        desc: '₹15,000 approved for Cine-Charcha',
+        desc: '₹15,000 approved for Campus Conclave',
         badge: 'APPROVED',
       },
       {
@@ -68,7 +68,7 @@ export const heroRolesData = {
         app: 'Attendance & Certs',
         time: '2h ago',
         title: 'Certificates Dispatched',
-        desc: 'Auto-generated for 42 participants',
+        desc: 'Auto-generated for participants',
         badge: 'READY',
       },
     ],
@@ -114,9 +114,9 @@ export const heroRolesData = {
 
 export const heroMockupData = {
   roleCards: {
-    Student: { title: 'Entry verified', desc: 'QR scanned · Valid once', meta: 'Cine-Charcha · Pass #389' },
-    Committee: { title: 'Roster synced', desc: '38 members · One click', meta: 'Design Committee · Confirmed' },
-    Organiser: { title: 'Ticket sales live', desc: '97% capacity · 214 checked in', meta: "Kalakriti'26 · ₹48,200 raised" },
+    Student: { title: 'Entry verified', desc: 'QR scanned · Valid once', meta: 'Campus Fest · Pass #389' },
+    Committee: { title: 'Roster synced', desc: 'Active members · One click', meta: 'Campus Council · Confirmed' },
+    Organiser: { title: 'Ticket sales live', desc: '97% capacity · 214 checked in', meta: 'Annual Fest · ₹48,200 raised' },
   },
   avatarStack: [
     { initial: 'A', bg: '#f3b5a5' },

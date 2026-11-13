@@ -2,6 +2,7 @@ import { useState } from 'react'
 import MobileNavbar from './MobileNavbar'
 import MobileBottomBar from './MobileBottomBar'
 import MobileProfileSheet from './MobileProfileSheet'
+import './responsive.css'
 
 export { MobileNavbar, MobileBottomBar, MobileProfileSheet }
 
@@ -13,9 +14,26 @@ export default function MobileNavigation({
   onOpenSearch,
   onOpenNotifications,
   onOpenContact,
+  onDashboardPage = false,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+
+  const handleLink = (event, href) => {
+    setMenuOpen(false)
+    if (href.startsWith('#')) {
+      const target = document.getElementById(href.slice(1))
+      if (target) {
+        event.preventDefault()
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        return
+      }
+    }
+    if (href.startsWith('/')) {
+      event.preventDefault()
+      onNavigate(href)
+    }
+  }
 
   return (
     <>
@@ -24,7 +42,7 @@ export default function MobileNavigation({
         onLogin={onLogin}
         onOpenNotifications={onOpenNotifications}
         onOpenProfile={() => setProfileOpen(true)}
-        onNavigate={onNavigate}
+        onLinkClick={handleLink}
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
       />
@@ -39,10 +57,12 @@ export default function MobileNavigation({
       />
 
       <MobileProfileSheet
+        isOpen={profileOpen}
         currentUser={currentUser}
         onClose={() => setProfileOpen(false)}
         onSignOut={onSignOut}
         onNavigate={onNavigate}
+        onDashboardPage={onDashboardPage}
       />
     </>
   )

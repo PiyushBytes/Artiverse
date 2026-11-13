@@ -108,45 +108,25 @@ async function post(path, payload, extraHeaders = {}, timeoutMs = 15000) {
   }
 
   if (!response.ok) {
-    const validation =
-      data.errors ||
-      (data.detail && typeof data.detail === 'object'
-        ? data.detail
-        : null)
-
-    const fieldErrors =
-      validation && !Array.isArray(validation)
-        ? Object.fromEntries(
-            Object.entries(validation)
-              .map(([field, value]) => [
-                field,
-                formatValidationValue(value),
-              ])
-              .filter(([, value]) => value)
-          )
-        : {}
-
-    const fieldMessage = Object.entries(fieldErrors)
-      .map(([field, message]) => `${field}: ${message}`)
-      .join(' ')
-
-    const detail =
-      typeof data.detail === 'string'
-        ? data.detail
-        : data.message || data.error
-
-    const message =
-      formatValidationValue(detail) ||
-      fieldMessage ||
-      formatValidationValue(validation) ||
-      `Request failed (${response.status}).`
+    let message = ''
+    if (typeof data.detail === 'string' && data.detail.trim()) {
+      message = data.detail.trim()
+    } else if (typeof data.message === 'string' && data.message.trim()) {
+      message = data.message.trim()
+    } else if (data.non_field_errors) {
+      message = formatValidationValue(data.non_field_errors)
+    } else {
+      const source = data.errors || data
+      const fieldEntries = Object.entries(source)
+        .filter(([k]) => !['status', 'code', 'error_code'].includes(k))
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${formatValidationValue(v)}`)
+        .filter(Boolean)
+      message = fieldEntries.length > 0 ? fieldEntries.join(' · ') : `Request failed (${response.status}).`
+    }
 
     const error = new Error(message)
-
     error.status = response.status
-    error.fieldErrors = fieldErrors
     error.data = data
-
     throw error
   }
 
@@ -260,11 +240,46 @@ export function persistAuthSession(response, fallbackRole = 'student') {
     JSON.stringify(currentUser)
   )
 
-  if (response.tokens) {
+  const tokenPayload =
+    response.tokens ||
+    response.data?.tokens ||
+    response.auth?.tokens ||
+    response.data ||
+    response.auth ||
+    response
+  const access =
+    tokenPayload?.access ||
+    tokenPayload?.access_token ||
+    tokenPayload?.accessToken ||
+    response.data?.access ||
+    response.data?.access_token ||
+    response.data?.accessToken ||
+    response.auth?.access ||
+    response.auth?.access_token ||
+    response.access ||
+    response.access_token ||
+    response.accessToken
+  const refresh =
+    tokenPayload?.refresh ||
+    tokenPayload?.refresh_token ||
+    tokenPayload?.refreshToken ||
+    response.data?.refresh ||
+    response.data?.refresh_token ||
+    response.data?.refreshToken ||
+    response.auth?.refresh ||
+    response.auth?.refresh_token ||
+    response.refresh ||
+    response.refresh_token ||
+    response.refreshToken
+
+  if (typeof access === 'string' && access.trim()) {
     localStorage.setItem(
       'artiverse_auth_tokens',
-      JSON.stringify(response.tokens)
+      JSON.stringify({ access: access.trim(), ...(typeof refresh === 'string' && refresh.trim() ? { refresh: refresh.trim() } : {}) })
     )
+  } else {
+    // Never keep an older session token when a fresh login response has no access token.
+    localStorage.removeItem('artiverse_auth_tokens')
   }
 
   return currentUser

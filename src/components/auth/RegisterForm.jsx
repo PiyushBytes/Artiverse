@@ -48,7 +48,7 @@ export default function RegisterForm({
           Create Your Profile
         </h2>
         <p className="mt-1 text-xs text-[#5e6355]">
-          Join the Arteza creative community at MSIT.
+          Join the Arteza creative campus community.
         </p>
       </div>
 

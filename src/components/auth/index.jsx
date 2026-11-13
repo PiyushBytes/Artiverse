@@ -7,6 +7,7 @@ import AuthHero from './AuthHero'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 import OtpPinForm from './OtpPinForm'
+import { OTP_MAX_ATTEMPTS, OTP_RESEND_COOLDOWN, OTP_TTL_SECONDS, getOtpDeadline } from '../../config/otpSecurity'
 import {
   createProfile,
   loginWithPin,
@@ -42,6 +43,9 @@ export default function AuthPage({
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', ''])
   const [otpTargetEmail, setOtpTargetEmail] = useState('')
   const [otpDetailMessage, setOtpDetailMessage] = useState('')
+  const [otpExpiresAt, setOtpExpiresAt] = useState(null)
+  const [resendAvailableAt, setResendAvailableAt] = useState(null)
+  const [attemptsRemaining, setAttemptsRemaining] = useState(OTP_MAX_ATTEMPTS)
   const otpInputRefs = useRef([])
 
   // Status and errors
@@ -55,7 +59,16 @@ export default function AuthPage({
     setErrors({})
     setStatusMessage(null)
     setOtpValues(['', '', '', '', '', ''])
+    setOtpExpiresAt(null)
+    setResendAvailableAt(null)
+    setAttemptsRemaining(OTP_MAX_ATTEMPTS)
   }, [mode])
+
+  const startOtpSecurityWindow = (response) => {
+    setOtpExpiresAt(getOtpDeadline(response, ['otp_expires_at', 'expires_at'], ['otp_expires_in', 'expires_in'], OTP_TTL_SECONDS))
+    setResendAvailableAt(getOtpDeadline(response, ['resend_available_at', 'resend_after_at'], ['resend_after', 'resend_in'], OTP_RESEND_COOLDOWN))
+    setAttemptsRemaining(Number(response?.attempts_remaining ?? OTP_MAX_ATTEMPTS))
+  }
 
   // LOGIN: Validate identifier and move directly to PIN screen.
   // No fake PIN request or account-existence probing.
@@ -184,6 +197,7 @@ export default function AuthPage({
         response.detail || 'Verify the OTP sent to your email to create your profile.'
       )
       setOtpValues(['', '', '', '', '', ''])
+      startOtpSecurityWindow(response)
       setStep('otp')
 
       setStatusMessage({
@@ -232,6 +246,12 @@ export default function AuthPage({
         onLoginSuccess?.(user)
       }, 600)
     } catch (err) {
+      if (err.status >= 400 && err.status < 500) {
+        const remaining = Number(err.data?.attempts_remaining ?? err.data?.remaining_attempts)
+        const isWrongOtp = /invalid|incorrect|wrong/i.test(err.message) && !/expired|cooldown|resend/i.test(err.message)
+        if (Number.isFinite(remaining)) setAttemptsRemaining(Math.max(0, remaining))
+        else if (isWrongOtp) setAttemptsRemaining((current) => Math.max(0, current - 1))
+      }
       setErrors({
         otp: err.message || 'Invalid or expired OTP. Please try again.',
       })
@@ -250,6 +270,9 @@ export default function AuthPage({
       const response = await resendOtp({
         identifier: otpTargetEmail,
       })
+
+      startOtpSecurityWindow(response)
+      setOtpValues(['', '', '', '', '', ''])
 
       setStatusMessage({
         type: 'success',
@@ -361,64 +384,69 @@ export default function AuthPage({
               </AnimatePresence>
 
               {/* Form routing */}
-              {step === 'pin' || step === 'otp' ? (
-                <OtpPinForm
-                  step={step}
-                  otpValues={otpValues}
-                  otpInputRefs={otpInputRefs}
-                  otpTargetEmail={otpTargetEmail}
-                  otpDetailMessage={otpDetailMessage}
-                  errors={errors}
-                  loading={loading}
-                  resendLoading={resendLoading}
-                  onResendOtp={handleResendOtp}
-                  onOtpChange={handleOtpChange}
-                  onOtpKeyDown={handleOtpKeyDown}
-                  onSubmit={step === 'pin' ? handlePinLogin : handleOtpVerify}
-                  onBackToForm={() => {
-                    setStep('form')
-                    setOtpValues(['', '', '', '', '', ''])
-                    setErrors({})
-                    setStatusMessage(null)
-                  }}
-                />
-              ) : mode === 'login' ? (
-                <LoginForm
-                  loginIdentifier={loginIdentifier}
-                  setLoginIdentifier={setLoginIdentifier}
-                  errors={errors}
-                  setErrors={setErrors}
-                  loading={loading}
-                  onSubmit={handleLoginSubmit}
-                  onNavigateRegister={onNavigateRegister}
-                />
-              ) : (
-                <RegisterForm
-                  selectedRole={selectedRole}
-                  setSelectedRole={setSelectedRole}
-                  committeeName={committeeName}
-                  setCommitteeName={setCommitteeName}
-                  regFirstName={regFirstName}
-                  setRegFirstName={setRegFirstName}
-                  regLastName={regLastName}
-                  setRegLastName={setRegLastName}
-                  regEmail={regEmail}
-                  setRegEmail={setRegEmail}
-                  regPhone={regPhone}
-                  setRegPhone={setRegPhone}
-                  regPin={regPin}
-                  setRegPin={setRegPin}
-                  showRegPin={showRegPin}
-                  setShowRegPin={setShowRegPin}
-                  agreeNewsletter={agreeNewsletter}
-                  setAgreeNewsletter={setAgreeNewsletter}
-                  errors={errors}
-                  setErrors={setErrors}
-                  loading={loading}
-                  onSubmit={handleRegisterSubmit}
-                  onNavigateLogin={onNavigateLogin}
-                />
-              )}
+              <div key={`${mode}-${step}`} className="w-full">
+                {step === 'pin' || step === 'otp' ? (
+                  <OtpPinForm
+                    step={step}
+                    otpValues={otpValues}
+                    otpInputRefs={otpInputRefs}
+                    otpTargetEmail={otpTargetEmail}
+                    otpDetailMessage={otpDetailMessage}
+                    otpExpiresAt={otpExpiresAt}
+                    resendAvailableAt={resendAvailableAt}
+                    attemptsRemaining={attemptsRemaining}
+                    errors={errors}
+                    loading={loading}
+                    resendLoading={resendLoading}
+                    onResendOtp={handleResendOtp}
+                    onOtpChange={handleOtpChange}
+                    onOtpKeyDown={handleOtpKeyDown}
+                    onSubmit={step === 'pin' ? handlePinLogin : handleOtpVerify}
+                    onBackToForm={() => {
+                      setStep('form')
+                      setOtpValues(['', '', '', '', '', ''])
+                      setErrors({})
+                      setStatusMessage(null)
+                    }}
+                  />
+                ) : mode === 'login' ? (
+                  <LoginForm
+                    loginIdentifier={loginIdentifier}
+                    setLoginIdentifier={setLoginIdentifier}
+                    errors={errors}
+                    setErrors={setErrors}
+                    loading={loading}
+                    onSubmit={handleLoginSubmit}
+                    onNavigateRegister={onNavigateRegister}
+                  />
+                ) : (
+                  <RegisterForm
+                    selectedRole={selectedRole}
+                    setSelectedRole={setSelectedRole}
+                    committeeName={committeeName}
+                    setCommitteeName={setCommitteeName}
+                    regFirstName={regFirstName}
+                    setRegFirstName={setRegFirstName}
+                    regLastName={regLastName}
+                    setRegLastName={setRegLastName}
+                    regEmail={regEmail}
+                    setRegEmail={setRegEmail}
+                    regPhone={regPhone}
+                    setRegPhone={setRegPhone}
+                    regPin={regPin}
+                    setRegPin={setRegPin}
+                    showRegPin={showRegPin}
+                    setShowRegPin={setShowRegPin}
+                    agreeNewsletter={agreeNewsletter}
+                    setAgreeNewsletter={setAgreeNewsletter}
+                    errors={errors}
+                    setErrors={setErrors}
+                    loading={loading}
+                    onSubmit={handleRegisterSubmit}
+                    onNavigateLogin={onNavigateLogin}
+                  />
+                )}
+              </div>
             </motion.div>
           </div>
         </div>
@@ -428,7 +456,6 @@ export default function AuthPage({
       <div className="relative z-20 border-t border-[#e4e6da] bg-white/60 px-4 py-2.5 text-center text-xs text-[#5e6355] backdrop-blur-md">
         <span>Official portal communications managed via </span>
         <strong className="font-semibold text-[#0d0f08]">connect.arteza@gmail.com</strong>
-        <span> · MSIT Kolkata</span>
       </div>
     </div>
   )

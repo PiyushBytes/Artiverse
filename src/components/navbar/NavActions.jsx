@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, LogOut, Menu, Settings, User, X } from 'lucide-react'
+import { Bell, House, LayoutDashboard, LogOut, Menu, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 
 export default function NavActions({
@@ -7,8 +7,8 @@ export default function NavActions({
   onLogin,
   onSignOut,
   onOpenNotifications,
-  onOpenProfile,
-  onOpenSettings,
+  onNavigate,
+  onDashboardPage,
   menuOpen,
   setMenuOpen,
 }) {
@@ -73,7 +73,7 @@ export default function NavActions({
               {initials}
             </button>
 
-            {/* Profile Dropdown Menu (Strictly: Profile, Settings, Log out) */}
+            {/* Account menu */}
             <AnimatePresence>
               {profileMenuOpen && (
                 <motion.div
@@ -90,33 +90,21 @@ export default function NavActions({
                     </p>
                   </div>
 
-                  <div className="py-1">
+                  <div className="space-y-0.5 py-1 border-b border-[#e4e6da]">
                     <button
                       type="button"
                       onClick={() => {
                         setProfileMenuOpen(false)
-                        onOpenProfile?.()
+                        onNavigate?.(onDashboardPage ? '/' : '/dashboard')
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#0d0f08] transition-colors hover:bg-[#f6f7f2]"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#0d0f08] transition-colors hover:bg-[#fafaf5]"
                     >
-                      <User size={15} className="text-[#5e6355]" />
-                      <span>Profile</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        onOpenSettings?.()
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#0d0f08] transition-colors hover:bg-[#f6f7f2]"
-                    >
-                      <Settings size={15} className="text-[#5e6355]" />
-                      <span>Settings</span>
+                      {onDashboardPage ? <House size={15} className="text-[#5e6355]" /> : <LayoutDashboard size={15} className="text-[#5e6355]" />}
+                      <span>{onDashboardPage ? 'Go to home page' : 'Dashboard'}</span>
                     </button>
                   </div>
 
-                  <div className="border-t border-[#e4e6da] pt-1">
+                  <div className="pt-1">
                     <button
                       type="button"
                       onClick={() => {

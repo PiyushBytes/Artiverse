@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   Building2,
@@ -10,80 +10,80 @@ import {
   Ticket,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-
-const directoryDatabase = [
-  {
-    id: 's_1',
-    type: 'committee',
-    title: 'Design Committee MSIT',
-    subtitle: 'Branding, UI/UX & Festival Creatives',
-    category: 'Creative Club',
-    tag: 'Recruitments Open',
-    link: '/committees',
-  },
-  {
-    id: 's_2',
-    type: 'committee',
-    title: 'Cine Club MSIT',
-    subtitle: 'Screenwriting, Cinematography & Film Festivals',
-    category: 'Cultural Club',
-    tag: 'Recruitments Open',
-    link: '/committees',
-  },
-  {
-    id: 's_3',
-    type: 'committee',
-    title: 'ByteForge Tech Society',
-    subtitle: 'Hackathons, Web Dev & Open Source',
-    category: 'Technical Club',
-    tag: 'Recruitments Open',
-    link: '/committees',
-  },
-  {
-    id: 's_4',
-    type: 'event',
-    title: 'Cine-Charcha 2026',
-    subtitle: 'MSIT Auditorium · March 15',
-    category: 'Film Conclave',
-    tag: 'Passes Live (₹99)',
-    link: '/events',
-  },
-  {
-    id: 's_5',
-    type: 'event',
-    title: "Kalakriti'26 Annual Fest",
-    subtitle: 'Main Grounds · March 28-30',
-    category: 'Cultural Festival',
-    tag: 'Early Bird Live (₹149)',
-    link: '/events',
-  },
-  {
-    id: 's_6',
-    type: 'college',
-    title: 'Meghnad Saha Institute of Technology',
-    subtitle: 'Kolkata, West Bengal · 8 Active Committees',
-    category: 'University Campus',
-    tag: 'Verified Partner',
-    link: '/about',
-  },
-]
+import { getCommitteeList } from '../api/committee'
 
 export default function SearchPage({ onNavigate }) {
   const reduceMotion = useReducedMotion()
   const [query, setQuery] = useState('')
   const [filterType, setFilterType] = useState('all')
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const results = directoryDatabase.filter((item) => {
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+
+    getCommitteeList()
+      .then((res) => {
+        if (cancelled || !res) return
+        const owned = Array.isArray(res.owned) ? res.owned : []
+        const memberOf = Array.isArray(res.member_of) ? res.member_of : []
+
+        const liveCommittees = [
+          ...owned
+            .filter((c) => Boolean(c && (c.committee_username || c.committee_name || c.name)))
+            .map((c) => ({
+              id: `c_${c.id}`,
+              type: 'committee',
+              title: c.committee_name || c.name || (c.committee_username ? c.committee_username.replace(/_/g, ' ') : 'Campus Committee'),
+              subtitle: c.committee_description || `@${c.committee_username || 'handle'} · Official Campus Committee`,
+              category: c.committee_category || 'Creative Arts & Design',
+              tag: 'Recruitments Open',
+              link: c.committee_username ? `/committees/${c.committee_username}` : '/events',
+            })),
+          ...memberOf
+            .filter((m) => Boolean(m && (m.committee_username || m.committee_name || m.committee?.committee_username || m.committee?.committee_name)))
+            .map((m) => {
+              const comm = m.committee || m
+              return {
+                id: `m_${comm.id || m.id}`,
+                type: 'committee',
+                title: comm.committee_name || comm.name || (comm.committee_username ? comm.committee_username.replace(/_/g, ' ') : 'Campus Club'),
+                subtitle: comm.committee_description || `@${comm.committee_username || 'club'} · Member Council`,
+                category: comm.committee_category || 'Campus Club',
+                tag: 'Member',
+                link: comm.committee_username ? `/committees/${comm.committee_username}` : '/events',
+              }
+            }),
+        ]
+
+        setItems(liveCommittees)
+      })
+      .catch(() => {
+        setItems([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const results = items.filter((item) => {
     const matchesType = filterType === 'all' || item.type === filterType
+    const q = (query || '').trim().toLowerCase()
+    if (!q) return matchesType
     const matchesQuery =
-      item.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.subtitle.toLowerCase().includes(query.toLowerCase()) ||
-      item.category.toLowerCase().includes(query.toLowerCase())
+      (item.title || '').toLowerCase().includes(q) ||
+      (item.subtitle || '').toLowerCase().includes(q) ||
+      (item.category || '').toLowerCase().includes(q)
     return matchesType && matchesQuery
   })
 
   return (
-    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] pt-28 pb-20 px-6">
+    <div className="min-h-screen bg-[#fafaf7] text-[#0d0f08] px-4 pb-20 pt-8 min-[900px]:px-6 min-[900px]:pt-28">
       <div className="mx-auto max-w-[850px]">
         {/* Header */}
         <div className="text-center max-w-xl mx-auto">
@@ -95,7 +95,7 @@ export default function SearchPage({ onNavigate }) {
             Search Artiverse
           </h1>
           <p className="mt-2 text-sm text-[#5e6355]">
-            Find committees, campus events, festivals, and student opportunities across colleges.
+            Find official committees, registered campus clubs, and student organizations.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function SearchPage({ onNavigate }) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search committees, events, colleges (e.g. Design, Kalakriti, MSIT)..."
+            placeholder="Search committees, clubs or handles..."
             className="w-full rounded-2xl border border-[#e4e6da] bg-white py-3.5 pl-11 pr-4 text-sm font-medium text-[#0d0f08] shadow-sm outline-none focus:border-[#0d0f08] focus:ring-2 focus:ring-[#0d0f08]/10"
           />
         </div>
@@ -119,9 +119,7 @@ export default function SearchPage({ onNavigate }) {
         <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {[
             { id: 'all', label: 'All Results' },
-            { id: 'committee', label: 'Committees' },
-            { id: 'event', label: 'Events & Passes' },
-            { id: 'college', label: 'Colleges' },
+            { id: 'committee', label: 'Committees & Clubs' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -139,7 +137,15 @@ export default function SearchPage({ onNavigate }) {
 
         {/* Results List */}
         <div className="mt-6 space-y-3">
-          {results.map((item) => (
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-2xl border border-[#e4e6da] bg-white/70 p-4" />
+              ))}
+            </div>
+          )}
+
+          {!loading && results.map((item) => (
             <motion.div
               key={item.id}
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -149,9 +155,7 @@ export default function SearchPage({ onNavigate }) {
             >
               <div className="flex items-center gap-3.5">
                 <span className="grid size-11 place-items-center rounded-xl bg-[#f5f6ef] border border-[#e4e6da] text-[#0d0f08]">
-                  {item.type === 'committee' && <Building2 size={18} />}
-                  {item.type === 'event' && <Ticket size={18} />}
-                  {item.type === 'college' && <MapPin size={18} />}
+                  <Building2 size={18} />
                 </span>
                 <div>
                   <h4 className="text-sm font-bold text-[#0d0f08]">{item.title}</h4>
@@ -170,11 +174,18 @@ export default function SearchPage({ onNavigate }) {
             </motion.div>
           ))}
 
-          {results.length === 0 && (
-            <div className="text-center py-12 rounded-2xl border border-dashed border-[#e4e6da] bg-white">
-              <Search size={32} className="mx-auto text-[#5e6355]/40" />
-              <p className="mt-2 text-sm font-semibold text-[#0d0f08]">No matching records found</p>
-              <p className="text-xs text-[#5e6355]">Try a different search keyword</p>
+          {!loading && results.length === 0 && (
+            <div className="text-center py-16 rounded-2xl border border-dashed border-[#e4e6da] bg-white px-4">
+              <Building2 size={32} className="mx-auto text-[#5e6355]/40" />
+              <p className="mt-3 text-sm font-semibold text-[#0d0f08]">No committees registered yet</p>
+              <p className="mt-1 text-xs text-[#5e6355]">Create your committee in the dashboard to list it on campus search.</p>
+              <button
+                onClick={() => onNavigate('/dashboard')}
+                className="lime-button glow mt-4 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wider text-[#0d0f08]"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
           )}
         </div>
@@ -182,4 +193,3 @@ export default function SearchPage({ onNavigate }) {
     </div>
   )
 }
-

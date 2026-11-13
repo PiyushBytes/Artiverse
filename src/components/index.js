@@ -10,6 +10,7 @@ export { default as CTA } from './cta'
 export { default as Footer } from './footer'
 export { default as ApplyPage } from './apply'
 export { default as AuthPage } from './auth'
+export { default as AuthModal } from './auth/AuthModal'
 export { default as Events } from './events'
 export { default as Dashboard } from './dashboard'
 

@@ -14,7 +14,7 @@ export default function EventMarquee() {
     trackRef.current.style.setProperty('--marquee-duration', `${duration}s`)
   })
 
-  const baseItems = [...eventNames, 'Built at MSIT, Kolkata']
+  const baseItems = [...eventNames, 'Built for Campus Communities']
   const items = [...baseItems, ...baseItems, ...baseItems]
 
   return (
@@ -22,7 +22,7 @@ export default function EventMarquee() {
       <div ref={trackRef} className="marquee-track flex w-max items-center gap-7 sm:gap-10" aria-hidden="true">
         {items.map((name, index) => (
           <span key={`${name}-${index}`} className="flex items-center gap-7 whitespace-nowrap sm:gap-10">
-            {name === 'Built at MSIT, Kolkata' ? (
+            {name === 'Built for Campus Communities' ? (
               <span className="inline-flex items-center gap-2 rounded-full border border-[#dfe1d3] bg-white px-3.5 py-1 text-xs font-bold tracking-tight text-[#0d0f08] shadow-sm sm:text-sm">
                 <span className="size-2 rounded-full bg-[#d4ff1f]" />
                 {name}
@@ -36,7 +36,7 @@ export default function EventMarquee() {
           </span>
         ))}
       </div>
-      <span className="sr-only">{eventNames.join(', ')}, Built at MSIT, Kolkata</span>
+      <span className="sr-only">{eventNames.join(', ')}, Built for Campus Communities</span>
     </section>
   )
 }
